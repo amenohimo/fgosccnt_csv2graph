@@ -775,7 +775,7 @@ def plt_event_line(df):
         # fig = px.scatter(E_df3, x=E_df3.index, y=E_df3.columns,
         #                  #color=E_df2.columns,
         #                  labels=dict(index="ボーナス+", value="ドロップ数", variable=""),
-           fig = go.Figure()
+        fig = go.Figure()
         for i in range(len(E_df3.columns)):
             fig.add_trace(
                 go.Scatter(
@@ -784,10 +784,10 @@ def plt_event_line(df):
                     mode='lines+markers'
                 )
             )
-        fig.update_xaxes(title_text="礼装ボーナス", dtick=1, range=[0, 12], domain=[0, 1])
-        fig.update_yaxes(title_text="ドロップ数", dtick=dtick3)
+        fig.update_xaxes(title_text="概念礼装ボーナス", dtick=1, range=[0, 12], domain=[0, 1])
+        fig.update_yaxes(title_text="ドロップ数", title_standoff=5, dtick=dtick3)
         fig.update_layout(
-            height=550, width=580,
+            height=550, width=480,
             title={
                 'text':"イベントアイテムの平均ドロップ数",
                 # 'x':0.45, 'y':0.98,
@@ -803,8 +803,7 @@ def plt_event_line(df):
             paper_bgcolor='white'
         )
         offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-         #                  trendline="lowess")
-    export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
+        export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
 def plt_line_matplot(df):
     E_df = pd.DataFrame({
