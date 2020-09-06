@@ -72,20 +72,24 @@ optional arguments:
 #### 使用例
 
 csvファイルを指定する
+出力先フォルダを指定していない場合は、プログラムのフォルダに同名で出力します
 ```
 $ python mergecsv.py C:\Silent_garden_B.csv
 ```
 出力先フォルダを指定する場合
+出力先フォルダに同名で出力します
 ```
 $ python mergecsv.py -f R:\ C:\Silent_garden_B.csv
 ```
 出力パスを指定する場合
+出力ファイル名を含めて指定することができます
+出力パスを指定する場合、複数ファイルの指定はできません
 ```
 $ python mergecsv.py -o R:\Silent_garden_B.csv C:\Silent_garden_B.csv
 ```
-csv2counter.py との互換性がなくなる
 合計行を削除する場合
-csv2counter.py との互換性がなくなるが、他のソフトで結果の解析をしたい場合などに合計の行を削除すると都合がいい可能性がある
+他のソフトで結果の解析をしたい場合などに合計の行を削除すると都合がいい可能性があります
+csv2counter.py との互換性はなくなります
 ```
 $ python mergecsv.py -r -o R:\Silent_garden_B.csv C:\Silent_garden_B.csv
 ```
