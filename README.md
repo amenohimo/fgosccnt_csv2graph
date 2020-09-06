@@ -4,7 +4,7 @@
 
 [fgosccnt.py](https://github.com/fgosc/fgosccnt) から作成した csv ファイルを元に、グラフを作成する
 
-作成できるグラフと機能
+### 作成できるグラフと機能
 - ドロップアイテム
   - データテーブル
   - 箱ひげ図
@@ -71,24 +71,25 @@ optional arguments:
 
 #### 使用例
 
-csvファイルを指定する
+##### csvファイルを指定する
 出力先フォルダを指定していない場合は、プログラムのフォルダに同名で出力します
 ```
 $ python mergecsv.py C:\Silent_garden_B.csv
 ```
-出力先フォルダを指定する場合
+##### 出力先フォルダを指定する
 出力先フォルダに同名で出力します
 ```
 $ python mergecsv.py -f R:\ C:\Silent_garden_B.csv
 ```
-出力パスを指定する場合
-出力ファイル名を含めて指定することができます
+##### 出力パスを指定する
+
+出力ファイル名を含めて指定することができます<br>
 出力パスを指定する場合、複数ファイルの指定はできません
 ```
 $ python mergecsv.py -o R:\Silent_garden_B.csv C:\Silent_garden_B.csv
 ```
-合計行を削除する場合
-他のソフトで結果の解析をしたい場合などに合計の行を削除すると都合がいい可能性があります
+##### 合計行を削除する
+他のソフトで結果の解析をしたい場合などに合計の行を削除すると都合がいい可能性があります<br>
 csv2counter.py との互換性はなくなります
 ```
 $ python mergecsv.py -r -o R:\Silent_garden_B.csv C:\Silent_garden_B.csv
