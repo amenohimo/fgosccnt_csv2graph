@@ -16,6 +16,15 @@
 - 周回数毎のアイテムのドロップ率
 - 統計データの出力 (予定)
 
+### 環境
+
+python 3.6以降
+plotly==4.8.1
+pandas
+kaleido
+matplotlib
+seaborn
+
 ### 使い方
 
 仕様が固まっていないため、変更になる可能性があります
@@ -39,9 +48,15 @@ optional arguments:
   -e, --event           イベントアイテムのプロットを作成
 ```
 
-使用例
+#### 使用例
+全てのグラフを作成
 ```
 $ python csv2graph.py <csv_path> -i <images_output_dir> -a
+```
+
+表と箱ひげ図を作成
+```
+$ python csv2graph.py <csv_path> -i <images_output_dir> -t -b
 ```
 
 ## mergecsv.py (おまけ)
