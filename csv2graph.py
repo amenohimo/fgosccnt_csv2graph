@@ -79,13 +79,15 @@ def get_correct_20plus_df(df):
     df = df.reset_index(drop=True)
     return df
 
-def make_df(csv_path):
+def make_df(csv_path, total_row=False):
     """
     DataFrameを作成する
     fgosccntで作成したcsvから、プロットや統計処理に使用するDataFrameを作成する
 
     Args:
         csv_path (str): fgosccntで作成したcsvファイルのパス
+        total_row (bool): 合計の行を残すか否か
+                      グラフの処理では邪魔になるので残さない
 
     Returns:
         DataFrame: プロットや統計処理に使用するDataFrame
@@ -95,20 +97,34 @@ def make_df(csv_path):
         df = pd.read_csv(csv_path, encoding='shift-jis')
     except UnicodeDecodeError:
         df = pd.read_csv(csv_path, encoding='UTF-8')
+    except pd.errors.EmptyDataError:
+        # 空のファイルを指定した可能性がある
+        print(f'\rファイルが空の可能性があります:\n{csv_path}')
+        return None
 
     print('\rcsv読み込み完了', end='')
 
     # csvにクエスト名があれば利用
     global quest_name
-    quest_name = df[df['ドロ数'].isnull()].values[0][0]
+    try:
+        quest_name = df[df['ドロ数'].isnull()].values[0][0]
+    except IndexError:
+        # IndexError が出るのは、1周分のデータしかないか、重複やmissingの可能性がある
+        pass
+    except UnboundLocalError:
+        print('UnboundLocalError')
+        return None
+
+
 
     # 合計の行を除去
-    try:
-        # df = df.drop(df[df['filename'].str.contains('合計', na=False)].index[0])
-        df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
-        df = df.reset_index(drop=True)
-    except IndexError:
-        print('合計の行を取り除く：既に合計の行は取り除かれているか、始めから存在しません')
+    if not total_row:        
+        try:
+            # df = df.drop(df[df['filename'].str.contains('合計', na=False)].index[0])
+            df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
+            df = df.reset_index(drop=True)
+        except IndexError:
+            print('合計の行を取り除く：既に合計の行は取り除かれているか、始めから存在しません')
 
     df = df.fillna(0)
 
@@ -305,6 +321,14 @@ def plt_box(df):
     export_img(fig, '箱ひげ図')
 
 def plt_all(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
+    
+    top = 65
+    bottom = 55
+    left = 70
+    right = 38
+    axs = 100   # 図の1つあたりの縦幅 [pixel]
+    vs_px = 72  # サブプロット間の間隔 [pixel]
+    template = "seaborn"
     if rate:
         fill = 'tozerox' #  ['none', 'tozeroy', 'tozerox', 'tonexty', 'tonextx','toself', 'tonext']
         ticksuffix = '%'
@@ -315,30 +339,27 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         mode = "lines+markers"
         ytext = 'ドロ数'
     df = drop_filename(df)
-    template = "seaborn"
+    
     total_runs = df.index.max() + 1
     cols = 2
 
     # グラフの行数
     rows = int(len(df.columns)/cols) if len(df.columns) %2 == 0 else int(len(df.columns)/cols + 1)
 
-    # サブプロットの設定
-    top = 65
-    bottom = 55
-    left = 70
-    right = 38
-    axs = 100
-    # slopes = 160
-    # intercepts = 200
-    # height = rows * slopes + intercepts
-    vs_px = 72 # サブプロット間の間隔のピクセル値
-    height = axs * rows + vs_px * (rows - 1) + top + bottom
-    vs = vs_px / (height - top - bottom)
+    # figure全体の高さは、図の高さ*個数 + 余白の高さの和
+    fig_height = axs * rows + vs_px * (rows - 1) + top + bottom
+
+    # 図の間の間隔
+    # plotlyではvertical spacingは割合でしか指定できない
+    vs = vs_px / (fig_height - top - bottom)
+
     fig = make_subplots(
-        rows=rows, cols=cols,
+        rows=rows,
+        cols=cols,
         vertical_spacing=vs,
         subplot_titles=df.columns
     )
+
     for i, col in enumerate(df.columns):
 
         y = df[col]
@@ -368,7 +389,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         _ymin, _ymax = y.min(), y.max()
         yrange = _ymax - _ymin
 
-        # 末尾付近のy軸を拡大
+        # 末尾付近をy軸方向に拡大
         if range_expans:
             # ymin = ymean - 1 * y[5:].std()
             ymin = ymean - yrange * 0.1
@@ -377,40 +398,52 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             # ymax = ymean + 1 * y[5:].std()
             ymax = ymean + yrange * 0.1
 
-        # y軸の全体を表示
+        # 線が見えなくならないようにy軸の範囲を微調整する
         else:
-            ymin = _ymin - yrange * 0.05  # 0%の時線が見えなくなるので 範囲 * -5% 下げる
+            ymin = _ymin - yrange * 0.05  # 0%の時線が見えなくなるので 範囲 * 5% 下げる
             ymax = _ymax + yrange * 0.05  # minだけ調整すると上にずれるので 範囲 * +5% 上げる
 
         # 線と点の大きさを、周回数によって変化させる
+        # 周回数が多い場合、サイズが大きいとそれぞれの点や線が重なり合って潰れてしまう
         if total_runs < 70:
             marker_size = 6
             line_width = 2
         elif total_runs <= 140:
             marker_size = 2
             line_width = 1
-        else: # 200周囲上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
-            if rate: # ドロ率はfillと点で頑張る
+
+        # 200周囲上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
+        else: 
+
+            # ドロ率はfillと点で頑張る
+            if rate: 
                 marker_size = 1
                 line_width = 0
-            else: # ドロ数は線がないと意味不明になるので、線を残す
+            
+            # ドロ数は線がないと意味不明瞭になるので、線を残す
+            else: 
                 marker_size = 2
                 line_width = 1
 
-        # Add traces
         fig.add_trace(
             go.Scatter(
-                x=df.index+1, y=y, mode=mode, name=col, fill=fill, showlegend=False,
+                x=df.index+1, y=y,
+                mode=mode,
+                name=col,
+                fill=fill,
+
+                # 凡例は、現在のplotlyの仕様だと一カ所にまとめて表示しかできない
+                # 離れると分かりにくいため、図の上にそれぞれ素材名を表示して代用する
+                # 手動で線や文字をお絵かきすれば、凡例擬きを自作することはおそらく可能
+                showlegend=False,
+
                 opacity=0.9,
-                # text='text',
-                # textposition='top right',
                 marker_size=marker_size,
                 line_width=line_width
             ),
             row=int(i/2)+1, col=i%2+1 # グラフの位置
         )
 
-        # Update yaxis properties
         fig.update_yaxes(
             title_text=ytext,
             title_standoff=5,
@@ -423,23 +456,22 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         )
 
         """
-        Formatting Ticks in Python
-        https://plotly.com/python/tick-formatting/
+            Formatting Ticks in Python
+            https://plotly.com/python/tick-formatting/
 
-        https://plotly.com/python/axes/
+            https://plotly.com/python/axes/
 
-
-        tickmode
-        Parent: layout.coloraxis.colorbar
-        Type: enumerated , one of ( 'auto' | 'linear' | 'array' )
-        Sets the tick mode for this axis. If 'auto', the number of
-        ticks is set via `nticks`. If 'linear', the placement of the
-        ticks is determined by a starting position `tick0` and a tick
-        step `dtick` ('linear' is the default value if `tick0` and `dtick`
-        are provided). If 'array', the placement of the ticks is set via
-        `tickvals` and the tick text is `ticktext`. ('array' is the default
-        value if `tickvals` is provided).
-        https://plotly.com/matlab/reference/#layout-margin
+            tickmode
+            Parent: layout.coloraxis.colorbar
+            Type: enumerated , one of ( 'auto' | 'linear' | 'array' )
+            Sets the tick mode for this axis. If 'auto', the number of
+            ticks is set via `nticks`. If 'linear', the placement of the
+            ticks is determined by a starting position `tick0` and a tick
+            step `dtick` ('linear' is the default value if `tick0` and `dtick`
+            are provided). If 'array', the placement of the ticks is set via
+            `tickvals` and the tick text is `ticktext`. ('array' is the default
+            value if `tickvals` is provided).
+            https://plotly.com/matlab/reference/#layout-margin
         """
         if total_runs < 30:
             dtick = 5
@@ -455,6 +487,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             dtick = 1000
         else:
             dtick = 5000
+
         fig.update_xaxes(
             # range=[0, df.index.max()+1],
             # fixedrange=True, #  固定範囲 trueの場合、ズームは無効
@@ -469,7 +502,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             tick0=0,
             dtick=dtick,
 
-            # tickmode='array'の場合は、ticktext でメモリテキストを tickvals でメモリの配置を設定する
+            # tickmode='array' の場合は、ticktext でメモリテキストを tickvals でメモリの配置を設定する
             # 周回数が少ない場合は、1,5,10,... でいいが、多い場合が課題になる
             # ticktext=[1 if i ==0 else 5 * i for i in range(int((df.index.max()+1)/5)+1)],
             # tickvals=[1 if i == 0 else 5 * i for i in range(int((total_runs)/5)+1)],
@@ -477,27 +510,21 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             title_text='周回数 [周]',
             title_standoff=0,
             title_font={"size":11},
-            # title_xanchor='right',　# HELP どうやって右に表示するか分からない
+
+            # x軸のラベルの位置の調整は、ドキュメントを探した限りだとやり方がなかった
+            # 表示をOFFにして、位置を指定してテキストを直打することで代用はおそらく可能
+            # title_xanchor='right',　
+
             row=int(i/2)+1, col=i%2+1
         )
 
-    # ymax = df.max().values.max()
-    # dtick = round(ymax/11/10)*10 if 130 < ymax else 10 if 70 < ymax else 5 if 13 < ymax else 1
-    # fig.update_xaxes(dtick=5) # メモリ幅
-    # fig.update_yaxes(title_text="", ticksuffix = ticksuffix)
     fig.update_layout(
-        height=height, width=1000, 
+        height=fig_height, width=1000, 
+
+        # 背景色を変えて
         paper_bgcolor='#FFFFFF',# "#aaf",EAEAF2,DBE3E6
         title={'text':title,'x':0.5,'y':0.985,'xanchor': 'center', 'font':dict(size=15)},
         font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
-        # xaxis=dict(
-        #     dtick=5,
-        # ),                             #title='', range = [0,100],
-        # yaxis=dict(
-        #     # range=[]
-        #     # dtick=5
-        # ),
-        # yaxis=dict(title_text="", ticksuffix=ticksuffix),#title='', range = [0,100], dtick=5),
         margin=dict(l=left, t=top, b=bottom, r=right, pad=0, autoexpand=False))
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
     export_img(fig, title)
@@ -530,14 +557,18 @@ def plt_rate(df):
     plt_all(droprate_df.copy(), title='各周回数における累積素材ドロップ率', rate=True)
     plt_all(droprate_df.copy(), title='各周回数における累積素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
 
-def export_img(fig, title):
-    """"""
+def export_img(fig, title, format='png'):
+    """
+        plotlyの出力結果を画像として保存する
+        
+        保存先：　<ディレクトリのパス>/<クエスト名> - <グラフのタイトル>.png
+    """
     Img_dir = Path(args.imgdir)
     if not Img_dir.parent.is_dir():
         Img_dir.parent.mkdir(parents=True)
     img_path = Img_dir / Path(get_quest_name() + '-' + title + ".png")
     with open(img_path, "wb") as f:
-        f.write(scope.transform(fig, format="png"))
+        f.write(scope.transform(fig, format=format))
 
 def drop_filename(df):
     """DataFrameからファイル名の列を削除する"""
@@ -548,6 +579,12 @@ def drop_filename(df):
     return df
 
 def get_quest_name():
+    """
+        短縮規則
+        アルファベットから始まっている場合: アルファベットと文末の単語(～級など)のみに短縮
+        (アルファベットが挟まっている場合:   アルファベットを取り除く) -> 問題があったため廃止
+        アルファベットで終わる場合:        アルファベットを取り除く
+    """
     if quest_name != '合計':
         return quest_name
     else:
@@ -559,12 +596,6 @@ def get_quest_name():
                 place = match.group(0)
         else:
             place = Path(csv_path).stem   # csvファイル名がクエスト名と仮定してそのまま利用
-        """
-        短縮規則
-        アルファベットから始まっている場合: アルファベットと文末の単語(～級など)のみに短縮
-        アルファベットが挟まっている場合:   アルファベットを取り除く
-        アルファベットで終わる場合:        アルファベットを取り除く
-        """
         is_short = False
         try:
 
@@ -610,19 +641,22 @@ def get_quest_name():
 
 def plt_table(df):
     """
-    ドロップ数とドロップ率のテーブルを表示する
-    plotlyを使用
-    枠線が表示されない場合は、ブラウザの拡大率を大きくして100％に戻すことで表示される
+        ドロップ数とドロップ率のテーブルを表示する
+        枠線が表示されない場合は、ブラウザの拡大率を大きくして100％に戻すことで表示される
 
-    クエストの名前は、パスから取得する
-    表の幅は自動で調整する
-        プロポーショナルフォントには対応していない > TODO
-    Ｍなどの横幅の広いアルファベットが多いと改行が発生する
-    `HIMEJIサバイバルカジノ ビギナー級` →　`HIMEJI ビギナー級` # とりあえず短くしてみる
+        クエストの名前は、以下から取得する
+            ・csvのファイル名
+            ・file nameの2行目 (fgoscdataに対応)
+            ・TODO　指定できるようにする
+        表の幅は自動で調整する
+            プロポーショナルフォントには対応していない > TODO
+        Ｍなどの横幅の広いアルファベットが多いと改行が発生する
+        `HIMEJIサバイバルカジノ ビギナー級` →　`HIMEJI ビギナー級` # とりあえず短くしてみる
 
-    アイテム名の列は、左右8 pixel ずつに 文字列の幅を 加えて横幅が決まる
-    デフォルトの幅の比率は、15:6:9
-    ぴったりの幅にすると改行され、レイアウトが崩れるため、余裕を持たせている (+7 pxcel)
+        アイテム名の列は、左右8 pixel ずつに 文字列の幅を 加えて横幅が決まる
+
+        デフォルトの幅の比率は、15:6:9
+        ぴったりの幅にすると改行され、レイアウトが崩れるため、余裕を持たせている (+7 pixel)
     """
     df = drop_filename(df)
     place = get_quest_name()
@@ -665,7 +699,7 @@ def plt_table(df):
 
 def plt_event_line(df):
     """
-    ボーナス毎のイベントアイテムのドロップ数を線形グラフを表示する
+        ボーナス毎のイベントアイテムのドロップ数を線形グラフを表示する
     """
     E_df = pd.DataFrame({
         'アイテム名':[re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
@@ -799,13 +833,17 @@ def plt_event_line(df):
             template=template,
             legend=dict(x=0.03, y=.97), # 左上
             # legend=dict(x=1.05, y=1), # 右上外
-            margin=dict(l=70, t=65, b=55, r=38, pad=0, autoexpand=False),
+            margin=dict(l=70, t=50, b=55, r=38, pad=0, autoexpand=False),
             paper_bgcolor='white'
         )
         offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
         export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
 def plt_line_matplot(df):
+    """
+        概念礼装ボーナス毎のイベントアイテム獲得量をラインプロットで描く
+
+    """
     E_df = pd.DataFrame({
         'アイテム名':[re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
         '枠名': df.columns[df.columns.str.contains('\(x')],
@@ -883,10 +921,12 @@ def plt_line_matplot(df):
 
 def plt_sunburst(df):
     """
-    イベントアイテムの円グラフを描く
-    一目でドロップ割合の傾向を掴むことが目的
-    ドロップ数で表示するとボーナスによって比率が変化する
-    TODO ドロップ数を表示するか、枠数の比率を表示するか要検討
+        イベントアイテムの円グラフを描く
+        一目でドロップ割合の傾向を掴むことが目的
+
+        ドロップ数で表示するとボーナスによって比率が変化する
+
+        TODO ドロップ数を表示するか、枠数の比率を表示するか要検討
     """
     fig = px.sunburst(
         pd.DataFrame({'アイテム名':[re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
@@ -898,19 +938,21 @@ def plt_sunburst(df):
     )
     template="seaborn" # ["plotly", "plotly_white", "plotly_dark", "ggplot2", "seaborn", "simple_white", "none"]
     fig.update_layout(
-        height=600, width=1000, title={'text':"",'x':0.5,'xanchor': 'center'},
+        height=600, width=1000, title={'text':"イベントアイテムの割合",'x':0.5,'xanchor': 'center'},
         font=dict(size=12), template=template, legend = dict(x = 1.005, y = 1))
     offline.iplot(fig, filename = 'イベントアイテム',  config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
     export_img(fig, 'イベントアイテムの割合')
 
 def plt_simple_parallel_coordinates(df):
     """
-    平行座標を描く
-    シンプルすぎて細かい表示や拘束範囲の調整ができないため、`plotly.express.parallel_coordinates`を使うのは
-    表示のテストをしたいときに使う程度 (実はできるのかもしれないが方法がわからない)
-    できないこと：
-    ・データ軸の最大最小値の設定
-    ・拘束範囲の設定
+        平行座標を描く
+
+        シンプルすぎて細かい表示や拘束範囲の調整ができないため、`plotly.express.parallel_coordinates`を使うのは
+        表示のテストをしたいときに使う程度 (実はできるのかもしれないが方法がわからない)
+            
+            できないこと：
+            ・データ軸の最大最小値の設定
+            ・拘束範囲の設定
     """
     fig = px.parallel_coordinates(
         df.drop('filename', axis=1),
@@ -923,17 +965,22 @@ def plt_simple_parallel_coordinates(df):
 
 def plt_parallel_coordinates(df):
     """
-    平行座標を描く
-    データフレームを受取り、平行座標を描く
-    描いた平行座標はWebブラウザを開いて表示される
-    開いたグラフはhtmlファイルとしてローカルに保存することができる
-    color は何を着目しているかをよく考えて、セットを選ぶ
-    必要であれば自分で定義する
-    `colors.diverging` : 平均や中央値が重要な意味をもつデータの場合には優先
-    `plotly.colors.cyclical`: 曜日・日・年など周期的構造がある場合には優先
-    `colors.sequential`: 汎用性が高いので連続データなら何でも
-    TODO png で保存するオプションを追加する
-    TODO html で保存するオプションを追加する
+        平行座標を描く
+
+        データフレームを受取り、平行座標を描く
+
+        描いた平行座標はWebブラウザを開いて表示される
+        開いたグラフはhtmlファイルとしてローカルに保存することができる
+
+        color は何を着目しているかをよく考えて、セットを選ぶ
+        必要であれば自分で定義する
+
+            `colors.diverging` : 平均や中央値が重要な意味をもつデータの場合に優先
+            `plotly.colors.cyclical`: 曜日・日・年など周期的構造がある場合に優先
+            `colors.sequential`: 汎用性が高いので連続データなら何でも
+
+        TODO png で保存するオプションを追加する
+        TODO html で保存するオプションを追加する
     """
     df = drop_filename(df)
     dims = []
@@ -957,7 +1004,7 @@ def plt_parallel_coordinates(df):
             dict(range=[rmin, rmax],
         #          constraintrange=[cmin, cmax],  # TODO　引数で渡す？
                 tickvals=list(set(df[df.columns[i]].tolist())), # ユニークな値をメモリ表示用に使用
-                label=df.columns[i][:label_len], # 長すぎると重なって読めなくなる
+                label=df.columns[i][:label_len], # 長すぎると重なって読めなくなるので、適度にカットする
                 values=df[df.columns[i]]
             )
         )
@@ -1019,6 +1066,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # ファイルが指定された場合
+    # csvファイルを引数として受け取る
+    # 指定するcsvファイルの枚数は複数にも対応
     if args.filenames:
 
         # 複数のファイルの場合
@@ -1033,7 +1082,16 @@ if __name__ == '__main__':
 
     # ファイル名の指定がない場合は、テスト用のデータを実行
     else:
-        csv_path = 'O:\_workspace\FGO_Count\csv\output2020_06_02_19_34_18フリーゲームバトル 上級.csv'
-        plts(make_df(csv_path))
+        print('csvファイルの指定がないため、テストファイルによるプロットを実行します', end='')
+        BASE_DIR = Path(__file__).resolve().parent
+        args.all = True
+
+        # テスト用のグラフ画像のファイル出力先を適宜指定
+        args.imgdir = BASE_DIR / 'images'
+
+        if not args.imgdir.parent.is_dir():
+            args.imgdir.parent.mkdir(parents=True)
+        csv_path = BASE_DIR / 'test_csv_files\Silent_garden_B.csv'
+        plts(make_df(str(csv_path)))
 
     print('\r処理完了        ')
