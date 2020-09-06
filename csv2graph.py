@@ -412,7 +412,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             marker_size = 2
             line_width = 1
 
-        # 200周囲上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
+        # 200周以上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
         else: 
 
             # ドロ率はfillと点で頑張る
@@ -521,8 +521,9 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
     fig.update_layout(
         height=fig_height, width=1000, 
 
-        # 背景色を変えて
+        # 背景色を変えてfigの範囲を確認する場合や、単に背景色を変えたい時に変更
         paper_bgcolor='#FFFFFF',# "#aaf",EAEAF2,DBE3E6
+
         title={'text':title,'x':0.5,'y':0.985,'xanchor': 'center', 'font':dict(size=15)},
         font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
         margin=dict(l=left, t=top, b=bottom, r=right, pad=0, autoexpand=False))
