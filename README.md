@@ -18,12 +18,12 @@
 
 ### 環境
 
-python 3.6以降
-plotly==4.8.1
-pandas
-kaleido
-matplotlib
-seaborn
+- python 3.6以降
+- plotly==4.8.1
+- pandas
+- kaleido
+- matplotlib
+- seaborn
 
 ### 使い方
 
