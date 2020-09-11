@@ -231,31 +231,35 @@ def plt_violine(df):
             y=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True
         ) for col in df.columns
     ]
-    # updatemenus = list([
-    #     dict(active=1,
-    #          buttons=list([
-    #             dict(label='Log Scale',
-    #                  method='update',
-    #                  args=[{'visible': [True, True]},
-    #                        {#'title': 'Log scale',
-    #                            'yaxis': {'type': 'log'}}]),
-    #             dict(label='Linear Scale',
-    #                  method='update',
-    #                  args=[{'visible': [True, False]},
-    #                        {#'title': 'Linear scale',
-    #                         'yaxis': {'type': 'linear'}
-    #                        }
-    #                  ]
-    #                 )
-    #          ]),
-    #     )
-    # ])
+    TEXT_SIZE = 15
+    SIZE_TO_TEXT_HEIGHT = {15: 13, 16: 15, 17: 15, 18: 15} # 実測値 TEXT_SIZE: px 
+    if 15 <= TEXT_SIZE <= 18:
+        TEXT_HEIGHT = SIZE_TO_TEXT_HEIGHT[TEXT_SIZE]
+    elif TEXT_SIZE < 15:
+        TEXT_HEIGHT = 13 # 実測値未測定
+    elif 18 < TEXT_SIZE:
+        TEXT_HEIGHT = 15 # 実測値未測定
+    TOP = 50
+    BOTTOM = 64
+    AX_HEIGHT = 600
+    FIG_HEIGHT = TOP + AX_HEIGHT + BOTTOM
+    FIG_WIDTH = 70 * len(df.columns)
+    OFSET = 1
+    # タイトルのy座標は、ボトム + 図の高さ + トップの半分の高さ + 文字の半分の高さ と 補正値
+    # 割合で指定するため、FIG_HEIGHTで割る必要がある
+    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFSET ) / FIG_HEIGHT
     layout = dict(
         # updatemenus=updatemenus,
-        title='',
+        title={
+            'text':get_quest_name(),
+            'x':0.5,
+            'y':y, #0.955,
+            'xanchor': 'center',
+            'font':dict(size=TEXT_SIZE)
+        },
         # yaxis=dict(range=[-0.5, df.max().max()]),
-        height=600, width=100*len(df.columns),
-        margin=dict(l=70, t=60, b=55, r=40, pad=0, autoexpand=False),
+        height=FIG_HEIGHT, width=100*len(df.columns),
+        margin=dict(l=40, t=TOP, b=BOTTOM, r=40, pad=0, autoexpand=False),
         template=template,
         yaxis=dict(
             # range=[-1.5, 30],
@@ -266,11 +270,6 @@ def plt_violine(df):
     ymax = df.max().values.max()
     dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
     fig.update_yaxes(title_text="", dtick=dtick)
-    # fig.update_layout(
-    #     height=700, width=1000, 
-    #     title={'text':title,'x':0.45,'y':0.985,'xanchor': 'center', 'font':dict(size=15)}, 
-    #     font=dict(size=12), template=template, legend = dict(x=1.005, y=1), 
-    #     margin=dict(l=20, t=60, b=0, r=0, pad=0))
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
     export_img(fig, 'ヴァイオリンプロット')
 
@@ -280,47 +279,56 @@ def plt_box(df):
     fig = go.Figure()
     data = [go.Box(y=df[col], name=col, showlegend=False)
             for col in df.columns]
-    # updatemenus = list([
-    #     dict(active=1,
-    #          buttons=list([
-    #             dict(label='Log Scale',
-    #                  method='update',
-    #                  args=[{'visible': [True, True]},
-    #                        {#'title': 'Log scale',
-    #                            'yaxis': {'type': 'log'}}]),
-    #             dict(label='Linear Scale',
-    #                  method='update',
-    #                  args=[{'visible': [True, False]},
-    #                        {#'title': 'Linear scale',
-    #                         'yaxis': {'type': 'linear'}
-    #                        }
-    #                  ]
-    #                 )
-    #          ]),
-    #     )
-    # ])
+    TEXT_SIZE = 15
+    SIZE_TO_TEXT_HEIGHT = {15: 13, 16: 15, 17: 15, 18: 15} # 実測値 TEXT_SIZE: px 
+    if 15 <= TEXT_SIZE <= 18:
+        TEXT_HEIGHT = SIZE_TO_TEXT_HEIGHT[TEXT_SIZE]
+    elif TEXT_SIZE < 15:
+        TEXT_HEIGHT = 13 # 実測値未測定
+    elif 18 < TEXT_SIZE:
+        TEXT_HEIGHT = 15 # 実測値未測定
+    TOP = 50
+    BOTTOM = 64
+    AX_HEIGHT = 600
+    FIG_HEIGHT = TOP + AX_HEIGHT + BOTTOM
+    FIG_WIDTH = 70 * len(df.columns)
+    OFSET = 1
+    # タイトルのy座標は、ボトム + 図の高さ + トップの半分の高さ + 文字の半分の高さ と 補正値
+    # 割合で指定するため、FIG_HEIGHTで割る必要がある
+    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFSET ) / FIG_HEIGHT
     layout = dict(
         # updatemenus=updatemenus,
-        title='',
-        height=600, width=60*len(df.columns), 
-        margin=dict(l=70, t=60, b=55, r=40, pad=0, autoexpand=False),
+        title={
+            'text':get_quest_name(),
+            'x':0.5,
+            'y':y, #0.955,
+            'xanchor': 'center',
+            'font':dict(size=TEXT_SIZE)
+        },
+        height=FIG_HEIGHT, width=FIG_WIDTH, 
+        margin=dict(
+            l=40,
+            t=TOP,
+            b=BOTTOM,
+            r=40,
+            pad=0,
+            autoexpand=False
+        ),
+        paper_bgcolor='#FFFFFF',# "#aaf",EAEAF2,DBE3E6,#FFFFFF (白)
         template=template
     )
     fig = go.Figure(data=data, layout=layout)
     ymax = df.max().values.max()
     dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
     fig.update_yaxes(title_text="", dtick=dtick)
-    # fig.update_layout(
-    #     height=700, width=1000, 
-    #     title={'text':title,'x':0.45,'y':0.985,'xanchor': 'center', 'font':dict(size=15)}, 
-    #     font=dict(size=12), template=template, legend = dict(x=1.005, y=1), 
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-    export_img(fig, '箱ひげ図')
+    if args.imgdir != None:
+        export_img(fig, '箱ひげ図')
 
 def plt_all(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
     
-    top = 65
-    bottom = 55
+    TOP = 65
+    BOTTOM = 55
     left = 70
     right = 38
     axs = 100   # 図の1つあたりの縦幅 [pixel]
@@ -344,11 +352,11 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
     rows = int(len(df.columns)/cols) if len(df.columns) %2 == 0 else int(len(df.columns)/cols + 1)
 
     # figure全体の高さは、図の高さ*個数 + 余白の高さの和
-    fig_height = axs * rows + vs_px * (rows - 1) + top + bottom
+    fig_height = axs * rows + vs_px * (rows - 1) + TOP + BOTTOM
 
     # 図の間の間隔
     # plotlyではvertical spacingは割合でしか指定できない
-    vs = vs_px / (fig_height - top - bottom)
+    vs = vs_px / (fig_height - TOP - BOTTOM)
 
     fig = make_subplots(
         rows=rows,
@@ -523,7 +531,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
 
         title={'text':title,'x':0.5,'y':0.985,'xanchor': 'center', 'font':dict(size=15)},
         font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
-        margin=dict(l=left, t=top, b=bottom, r=right, pad=0, autoexpand=False))
+        margin=dict(l=left, t=TOP, b=BOTTOM, r=right, pad=0, autoexpand=False))
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
     export_img(fig, title)
 
