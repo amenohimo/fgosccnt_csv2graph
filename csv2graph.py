@@ -42,7 +42,7 @@ cf.go_offline()
 # cf.set_config_file(offline=True, theme="white", offline_show_link=False)
 
 progname = "csv2graph"
-version = "0.0.0.20200806"
+version = "0.0.0.20200907"
 warnings.simplefilter('ignore', FutureWarning)
 pd.options.plotting.backend = "plotly"
 quest_name = ''
@@ -115,8 +115,6 @@ def make_df(csv_path, total_row=False):
         print('UnboundLocalError')
         return None
 
-
-
     # 合計の行を除去
     if not total_row:        
         try:
@@ -133,7 +131,7 @@ def make_df(csv_path, total_row=False):
         if not row == '20+':
             df.iloc[i, 1] = np.uint16(row)
 
-    # 3列目以降は numpy.float64 として読み込まれる
+    # 3列目以降は numpy.float64 として読み込まれるのでintにキャスト
     for col in df.columns:
         if type(df[col].values[0]) == np.float64:
             df[col] = df[col].astype(np.uint16)
@@ -316,7 +314,6 @@ def plt_box(df):
     #     height=700, width=1000, 
     #     title={'text':title,'x':0.45,'y':0.985,'xanchor': 'center', 'font':dict(size=15)}, 
     #     font=dict(size=12), template=template, legend = dict(x=1.005, y=1), 
-    #     margin=dict(l=20, t=60, b=0, r=0, pad=0))
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
     export_img(fig, '箱ひげ図')
 
@@ -507,7 +504,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             # ticktext=[1 if i ==0 else 5 * i for i in range(int((df.index.max()+1)/5)+1)],
             # tickvals=[1 if i == 0 else 5 * i for i in range(int((total_runs)/5)+1)],
 
-            title_text='周回数 [周]',
+            title_text='周回数',
             title_standoff=0,
             title_font={"size":11},
 
@@ -984,6 +981,8 @@ def plt_parallel_coordinates(df):
         TODO html で保存するオプションを追加する
     """
     df = drop_filename(df)
+    # 重複データを削除する
+    df = df.drop_duplicates()
     dims = []
     width = 970
     # margin_left = margin_right = max([len(col) for col in df.columns])*10/2
