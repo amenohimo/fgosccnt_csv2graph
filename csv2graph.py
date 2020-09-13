@@ -244,10 +244,10 @@ def plt_violine(df):
     AX_HEIGHT = 600
     FIG_HEIGHT = TOP + AX_HEIGHT + BOTTOM
     FIG_WIDTH = 70 * len(df.columns)
-    OFSET = 1
+    OFFSET = 1
     # タイトルのy座標は、ボトム + 図の高さ + トップの半分の高さ + 文字の半分の高さ と 補正値
     # 割合で指定するため、FIG_HEIGHTで割る必要がある
-    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFSET ) / FIG_HEIGHT
+    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFFSET ) / FIG_HEIGHT
     layout = dict(
         # updatemenus=updatemenus,
         title={
@@ -292,10 +292,10 @@ def plt_box(df):
     AX_HEIGHT = 600
     FIG_HEIGHT = TOP + AX_HEIGHT + BOTTOM
     FIG_WIDTH = 70 * len(df.columns)
-    OFSET = 1
+    OFFSET = 1
     # タイトルのy座標は、ボトム + 図の高さ + トップの半分の高さ + 文字の半分の高さ と 補正値
     # 割合で指定するため、FIG_HEIGHTで割る必要がある
-    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFSET ) / FIG_HEIGHT
+    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFFSET ) / FIG_HEIGHT
     layout = dict(
         # updatemenus=updatemenus,
         title={
@@ -662,19 +662,29 @@ def plt_table(df):
 
                 `HIMEJIサバイバルカジノ ビギナー級` →　`HIMEJI ビギナー級`
 
-        アイテム名列の幅は、左右8pixelずつ + 文字列の幅
-        ぴったりの幅にすると改行され、レイアウトが崩れるため、余裕を持たせている (+7 pixel)
+        表示上のアイテム名列の幅 (実測値): 左右8pxずつ + 文字列の幅
+        実際にぴったりの幅を指定すると、改行されレイアウトが崩れるため、更に7px余裕を持たせる
 
         デフォルトの列幅の比率は、15:6:9
             
     """
+    TOP = 30
+    BOTTOM = 30
+    LEFT = 40
+    RIGHT = 40
+    CELL_HEIGHT = 26
+    LINE_WIDTH = 1
+    HIGHT_OFFSET = 1 # 上下の枠線が消える問題
     df = drop_filename(df)
-    place = get_quest_name()
-    place_width = (get_east_asian_width_count(place) + 8 * 2 + 7
-                   if 150 < get_east_asian_width_count(place) + 8 * 2 + 14 else 150)
-    drops_width, rates_width = 6, 9
-    items_width = np.ceil(place_width / 150 * (drops_width + rates_width))
-    width = place_width + 150 + 2 # 左右の線幅 1+1=2
+    quest_name = get_quest_name()
+    qn_width = get_east_asian_width_count(quest_name)
+    place_width = (
+        qn_width + 8 * 2 + 7 if 150 < qn_width + 8 * 2 + 14 else 150
+    )
+    DROPS_WIDTH, RATES_WIDTH = 6, 9
+    items_width = np.ceil(place_width / 150 * (DROPS_WIDTH + RATES_WIDTH))
+    width = place_width + 150 + LEFT + RIGHT
+
     runs = df.sum().values[1:2][0]
     items = df.sum().index[2:]
     drops = df.sum().values[2:]
@@ -688,43 +698,83 @@ def plt_table(df):
         # 4桁の時は有効桁数5 1234.5678... -> 1234.5%
         # n桁の時は有効桁数n+1
         # ただし、2桁以下の場合は有効桁数3    1.2345... -> 1.23%
+        # 有効数字 significant figures (s.f.)
         n = len(str(int(dr//1)))
         if 3 <= n:
             sf = n + 1
         else:
             sf = 3
-        print(dr, sf)
         drstr = f'{dr:>.{sf}g}'
         if is_integer(drstr):
             # 小数点1桁が0の場合省略されるので、明示的に.0の表示を指定
             rates.append(f'{dr:>.1f} %')
         else:
             rates.append(drstr + ' %')
-    height = 26
 
-    fig = go.Figure(data=[go.Table(
-        columnorder = [0,1,2],
-        columnwidth = [items_width, drops_width, rates_width],
-        header=dict(values=[place, runs, ''],
+    fig = go.Figure(
+        data=[
+            go.Table(
+                columnorder=[0, 1, 2],
+                columnwidth=[items_width, DROPS_WIDTH, RATES_WIDTH],
+                header=dict(
+                    values=[quest_name, runs, ''],
                     line_color='black',
+                    line_width=LINE_WIDTH,
                     fill_color='white',
                     align=['left', 'right', 'right'],
+                    font_color='black',
                     font_size=14,
-                    height=height),
-        cells=dict(values=[items, drops, rates],
-                   # suffix=['', '', '%'],
-                   line_color='black',
-                   fill_color='white',
-                   align=['left', 'right'],
-                   height=height
-        ))
-    ])
-    fig.update_layout(
-        height=height*len(df.columns[1:])+2, width=width,
-        font=dict(size=14), paper_bgcolor='white',
-        margin=dict(l=1, r=1, b=0, t=1, pad=0, autoexpand=False) # bは1でないと線が下の枠線が消える
+                    # font=dict(
+                    #     color='black',
+                    #     size=14
+                    # ),
+                    height=CELL_HEIGHT
+                ),
+                cells=dict(
+                    values=[items, drops, rates],
+                    # suffix=['', '', '%'],
+                    line_color='black',
+                    line_width=LINE_WIDTH,
+                    fill_color='white',
+                    align=['left', 'right'],
+                    font=dict(
+                        color='black',
+                        size=14
+                    ),
+                    height=CELL_HEIGHT
+                )
+            )
+        ]
     )
-    offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+    fig.update_layout(
+        # LINE_WIDTH は現時点で1or2以外の場合を考慮していない
+        # 線幅を考える時に考える
+        height=CELL_HEIGHT * len(df.columns[1:]) + TOP + BOTTOM + LINE_WIDTH + HIGHT_OFFSET,
+        width=width,
+        font=dict(size=14),
+        # 背景色を変えてfigの範囲を確認する場合や、単に背景色を変えたい時に変更
+        paper_bgcolor='white', # white', '#FFFFFF', "#aaf", '#EAEAF2', '#DBE3E6'
+        margin=dict(
+            # l=1,
+            # r=1,
+            # b=0,
+            # t=1,
+            # pad=0,
+            l=LEFT,
+            r=RIGHT,
+            b=BOTTOM,# bは1でないと線が下の枠線が消える
+            t=TOP,
+            pad=0,
+            autoexpand=False
+        )
+    )
+    offline.iplot(
+        fig,
+        config={
+            "displaylogo":False,
+            "modeBarButtonsToRemove":["sendDataToCloud"]
+        }
+    )
     if args.imgdir != None:
         export_img(fig, '0_table')
 
@@ -912,7 +962,7 @@ def plt_line_matplot(df):
 
     #prepare data
     x = range(10)
-    y = [i*0.5 for i in range(10)]
+    y = [i * 0.5 for i in range(10)]
 
     #2行1列のグラフの描画
     #subplot で 2*1 の領域を確保し、それぞれにグラフ・表を描画
@@ -994,9 +1044,9 @@ def plt_simple_parallel_coordinates(df):
         シンプルすぎて細かい表示や拘束範囲の調整ができないため、`plotly.express.parallel_coordinates`を使うのは
         表示のテストをしたいときに使う程度 (実はできるのかもしれないが方法がわからない)
             
-            できないこと：
-            ・データ軸の最大最小値の設定
-            ・拘束範囲の設定
+            できないこと
+              - データ軸の最大最小値の設定
+              - 拘束範囲の設定
     """
     fig = px.parallel_coordinates(
         df.drop('filename', axis=1),
