@@ -560,8 +560,8 @@ def plt_rate(df):
     # droprate_df['ドロ数'] /= 100
 
     # %表記を指定してプロット
-    plt_all(droprate_df.copy(), title='各周回数における累積素材ドロップ率', rate=True)
-    plt_all(droprate_df.copy(), title='各周回数における累積素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
+    plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率', rate=True)
+    plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
 
 def export_img(fig, title, format='png'):
     """
@@ -648,21 +648,25 @@ def get_quest_name():
 def plt_table(df):
     """
         ドロップ数とドロップ率のテーブルを表示する
-        枠線が表示されない場合は、ブラウザの拡大率を大きくして100％に戻すことで表示される
+        ブラウザ上で枠線が表示されない場合は、ブラウザの拡大率を100％に戻すことで表示される
 
         クエストの名前は、以下から取得する
-            ・csvのファイル名
-            ・file nameの2行目 (fgoscdataに対応)
-            ・TODO　指定できるようにする
+          - csvのファイル名
+          - file nameの2行目 (fgoscdataに対応)
+          - TODO　指定できるようにする
+
         表の幅は自動で調整する
-            プロポーショナルフォントには対応していない > TODO
-        Ｍなどの横幅の広いアルファベットが多いと改行が発生する
-        `HIMEJIサバイバルカジノ ビギナー級` →　`HIMEJI ビギナー級` # とりあえず短くしてみる
+          - プロポーショナルフォントには対応していない > TODO
+          - Ｍなどの横幅の広いアルファベットが多いと改行が発生する
+          - とりあえず短くしてみる
 
-        アイテム名の列は、左右8 pixel ずつに 文字列の幅を 加えて横幅が決まる
+                `HIMEJIサバイバルカジノ ビギナー級` →　`HIMEJI ビギナー級`
 
-        デフォルトの幅の比率は、15:6:9
+        アイテム名列の幅は、左右8pixelずつ + 文字列の幅
         ぴったりの幅にすると改行され、レイアウトが崩れるため、余裕を持たせている (+7 pixel)
+
+        デフォルトの列幅の比率は、15:6:9
+            
     """
     df = drop_filename(df)
     place = get_quest_name()
@@ -674,8 +678,28 @@ def plt_table(df):
     runs = df.sum().values[1:2][0]
     items = df.sum().index[2:]
     drops = df.sum().values[2:]
-    rates = ['{:>.1%}'.format(i/runs) for i in drops]
-    # rates = ['{:>.2g}'.format(i/runs) for i in drops]
+    # ドロップ率
+    #   小数点1位で統一する場合
+    # rates = [f'{i/runs:>.2%}' for i in drops]
+    #   有効桁数3桁以上にする場合
+    rates = []
+    for i in drops:
+        dr = i / runs * 100
+        # 4桁の時は有効桁数5 1234.5678... -> 1234.5%
+        # n桁の時は有効桁数n+1
+        # ただし、2桁以下の場合は有効桁数3    1.2345... -> 1.23%
+        n = len(str(int(dr//1)))
+        if 3 <= n:
+            sf = n + 1
+        else:
+            sf = 3
+        print(dr, sf)
+        drstr = f'{dr:>.{sf}g}'
+        if is_integer(drstr):
+            # 小数点1桁が0の場合省略されるので、明示的に.0の表示を指定
+            rates.append(f'{dr:>.1f} %')
+        else:
+            rates.append(drstr + ' %')
     height = 26
 
     fig = go.Figure(data=[go.Table(
@@ -701,7 +725,21 @@ def plt_table(df):
         margin=dict(l=1, r=1, b=0, t=1, pad=0, autoexpand=False) # bは1でないと線が下の枠線が消える
     )
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-    export_img(fig, '0_table')
+    if args.imgdir != None:
+        export_img(fig, '0_table')
+
+def is_integer(n):
+    """
+        数値が整数かどうか判定する
+
+        整数ならTrue, 整数以外ならFalseを返す
+    """
+    try:
+        float(n)
+    except ValueError:
+        return False
+    else:
+        return float(n).is_integer()
 
 def plt_event_line(df):
     """
@@ -1068,7 +1106,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--pc', action='store_true', help='平行座標を作成')
     parser.add_argument('-t', '--table', action='store_true', help='表を作成')
     parser.add_argument('-d', '--drop', action='store_true', help='周回数ごとのドロップ数を作成')
-    parser.add_argument('-r', '--rate', action='store_true', help='周回数ごとの累積素材ドロップ率を作成')
+    parser.add_argument('-r', '--rate', action='store_true', help='周回数ごとの素材ドロップ率を作成')
     parser.add_argument('-e', '--event', action='store_true', help='イベントアイテムのプロットを作成')
 
     args = parser.parse_args()
