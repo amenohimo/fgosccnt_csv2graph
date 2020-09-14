@@ -220,7 +220,8 @@ def plt_Ridgeline(df):
     fig.update_xaxes(title_text="ドロップ数", dtick=1)
     # fig.update_layout(xaxis_showgrid=False, xaxis_zeroline=False)
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-    export_img(fig, '稜線図')
+    if args.imgdir != None:
+        export_img(fig, '稜線図')
 
 def plt_violine(df):
     df = drop_filename(df)
@@ -271,7 +272,8 @@ def plt_violine(df):
     dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
     fig.update_yaxes(title_text="", dtick=dtick)
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-    export_img(fig, 'ヴァイオリンプロット')
+    if args.imgdir != None:
+        export_img(fig, 'ヴァイオリンプロット')
 
 def plt_box(df):
     df = drop_filename(df)
@@ -533,7 +535,8 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
         margin=dict(l=left, t=TOP, b=BOTTOM, r=right, pad=0, autoexpand=False))
     offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-    export_img(fig, title)
+    if args.imgdir != None:
+        export_img(fig, title)
 
 def plt_rate(df):
     """
@@ -688,9 +691,12 @@ def plt_table(df):
     runs = df.sum().values[1:2][0]
     items = df.sum().index[2:]
     drops = df.sum().values[2:]
+
     # ドロップ率
+
     #   小数点1位で統一する場合
     # rates = [f'{i/runs:>.2%}' for i in drops]
+
     #   有効桁数3桁以上にする場合
     rates = []
     for i in drops:
@@ -706,7 +712,8 @@ def plt_table(df):
             sf = 3
         drstr = f'{dr:>.{sf}g}'
         if is_integer(drstr):
-            # 小数点1桁が0の場合省略されるので、明示的に.0の表示を指定
+            # 小数点第1位 (the tenths place) が0の場合、.0が省略される
+            # 明示的に.0の表示を指定
             rates.append(f'{dr:>.1f} %')
         else:
             rates.append(drstr + ' %')
@@ -749,6 +756,7 @@ def plt_table(df):
     fig.update_layout(
         # LINE_WIDTH は現時点で1or2以外の場合を考慮していない
         # 線幅を考える時に考える
+        # HIGHT_OFFSETを設定しないと下の枠線が消える
         height=CELL_HEIGHT * len(df.columns[1:]) + TOP + BOTTOM + LINE_WIDTH + HIGHT_OFFSET,
         width=width,
         font=dict(size=14),
@@ -762,7 +770,7 @@ def plt_table(df):
             # pad=0,
             l=LEFT,
             r=RIGHT,
-            b=BOTTOM,# bは1でないと線が下の枠線が消える
+            b=BOTTOM,
             t=TOP,
             pad=0,
             autoexpand=False
@@ -795,6 +803,21 @@ def plt_event_line(df):
     """
         ボーナス毎のイベントアイテムのドロップ数を線形グラフを表示する
     """
+    from tabulate import tabulate # コード確認用
+    
+    ##  イベントアイテムに使用するDF1
+    #       TODO 変数名を考える
+    #
+    #       データ
+    #         - (x3)などを取り除いたアイテム名
+    #         - (x3)がついているアイテム名
+    #         - (x3)がついているものの数
+    #         - (x3)などを取り除いた場合の数
+
+    # |    | アイテム名   | 枠名             |   ドロップ枠数 |   枠数 |   アイテム数 |
+    # |----|--------------|------------------|----------------|--------|--------------|
+    # |  0 | チェーンソー | チェーンソー(x3) |           1002 |      3 |         3006 |
+    # |  1 | 薪           | 薪(x3)           |            153 |      3 |          459 |
     E_df = pd.DataFrame({
         'アイテム名':[re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
         '枠名': df.columns[df.columns.str.contains('\(x')],
@@ -803,13 +826,65 @@ def plt_event_line(df):
         'アイテム数':[df[i].sum() * np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]]
     })
 
+    ##  イベントアイテムに使用するDF2
+    #       TODO 変数名を考える
+
+    #       データ
+    #         - アイテム毎、礼装ボーナス毎のドロップ数
+
+    # |     |   チェーンソー(x3) |   薪(x3) |
+    # |-----|--------------------|----------|
+    # |  +0 |            45.5455 |  6.95455 |
+    # |  +1 |            60.7273 |  9.27273 |
+    # |  +2 |            75.9091 | 11.5909  |
+    # |  +3 |            91.0909 | 13.9091  |
+    # |  +4 |           106.273  | 16.2273  |
+    # |  +5 |           121.455  | 18.5455  |
+    # |  +6 |           136.636  | 20.8636  |
+    # |  +7 |           151.818  | 23.1818  |
+    # |  +8 |           167      | 25.5     |
+    # |  +9 |           182.182  | 27.8182  |
+    # | +10 |           197.364  | 30.1364  |
+    # | +11 |           212.545  | 32.4545  |
+    # | +12 |           227.727  | 34.7727  |
     E_df2 = pd.DataFrame(
-        np.array([(E_df['枠数'].values[j]+i)*E_df['ドロップ枠数'].values[j]/len(df.index.values)
-                  for i in range(13) for j in range(len(E_df))]).reshape(13, len(E_df)),
+        np.array(
+            [
+                # ボーナス礼装装備時の1周あたりアイテムドロップ数 [アイテムドロップ数/周]
+                # (基本束数 + ボーナス増加数) [アイテムドロップ数/枠] * 平均枠数 [枠/周]
+                # ex. (3 + 0~12) * 1002 / 66
+                # ex. (3 + 0~12) * 153 / 66
+                (E_df['枠数'].values[j] + i) * E_df['ドロップ枠数'].values[j] / len(df)
+                for i in range(13) for j in range(len(E_df))
+            ]
+        ).reshape(13, len(E_df)),
         columns=[i for i in E_df['枠名']],
         index=['+' + str(i) for i in range(13)]
     )
 
+
+
+    ##  イベントアイテムに使用するDF3
+    #       TODO 変数名を考える
+
+    #       データ
+    #         - 束数毎に分かれていたアイテム毎の合計
+
+    # |     |   チェーンソー |       薪 |
+    # |-----|----------------|----------|
+    # |  +0 |        45.5455 |  6.95455 |
+    # |  +1 |        60.7273 |  9.27273 |
+    # |  +2 |        75.9091 | 11.5909  |
+    # |  +3 |        91.0909 | 13.9091  |
+    # |  +4 |       106.273  | 16.2273  |
+    # |  +5 |       121.455  | 18.5455  |
+    # |  +6 |       136.636  | 20.8636  |
+    # |  +7 |       151.818  | 23.1818  |
+    # |  +8 |       167      | 25.5     |
+    # |  +9 |       182.182  | 27.8182  |
+    # | +10 |       197.364  | 30.1364  |
+    # | +11 |       212.545  | 32.4545  |
+    # | +12 |       227.727  | 34.7727  |
     E_df3 = pd.DataFrame()
     for i in E_df2.columns:
         if not re.search('.+(?=\(x\d)', i).group(0) in E_df3.columns: # アイテムの列がまだなければ作成
@@ -817,28 +892,9 @@ def plt_event_line(df):
         else:
             E_df3[re.search('.+(?=\(x\d)', i).group(0)] += E_df2[i] # 既にあれば加算
 
-# #     E_df2.plot(labels=dict(index="ボーナス+", value="ドロップ数", variable=""))
-# #     E_df3.plot(title='イベントアイテムドロップ数',
-# # #            template="simple_white",
-# #            labels=dict(index="ボーナス+", value="ドロップ数", variable=""))
-#     fig = px.scatter(E_df2, x=E_df2.index, y=E_df2.columns,
-#                     #color=E_df2.columns,
-#                     labels=dict(index="ボーナス+", value="ドロップ数", variable=""),
-#                     trendline="lowess")
-#     fig.update_layout(
-#         width=700, height=500, paper_bgcolor='white'#, #'black' # "LightSteelBlue" # 視認性はデータの把握に重要なのでいい設定を探す
-#     )
-#     offline.iplot(fig, filename = 'イベントアイテム',  config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-
-
-#     fig = px.scatter(E_df3, x=E_df3.index, y=E_df3.columns,
-#                  #color=E_df2.columns,
-#                  labels=dict(index="ボーナス+", value="ドロップ数", variable=""),
-#                  trendline="lowess")
-#     fig.update_layout(
-#         width=700, height=500, paper_bgcolor='white'#, #'black' # "LightSteelBlue" # 視認性はデータの把握に重要なのでいい設定を探す
-#     )
-#     offline.iplot(fig, filename = 'イベントアイテム',  config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+    # 確認用コード
+    # print()
+    # print(tabulate(E_df3, E_df3.columns, tablefmt='github', showindex=True))
 
     max2 = E_df2.max().max()
     max3 = E_df3.max().max()
@@ -864,25 +920,53 @@ def plt_event_line(df):
         fig = make_subplots(rows=1, cols=2, subplot_titles=('枠毎の平均ドロップ数', 'アイテム毎の平均ドロップ数'))
         for i in range(len(E_df2.columns)):
             fig.add_trace(
-                go.Scatter(x=E_df2.index, y=E_df2[E_df2.columns[i]], name=E_df2.columns[i]),
+                go.Scatter(
+                    x=E_df2.index,
+                    y=E_df2[E_df2.columns[i]],
+                    name=E_df2.columns[i]
+                ),
                 row=1, col=1
             )
         for i in range(len(E_df3.columns)):
             fig.add_trace(
-                go.Scatter(x=E_df3.index, y=E_df3[E_df3.columns[i]], name=E_df3.columns[i]),
+                go.Scatter(
+                    x=E_df3.index,
+                    y=E_df3[E_df3.columns[i]],
+                    name=E_df3.columns[i]
+                ),
                 row=1, col=2
             )
-        fig.update_xaxes(title_text="礼装ボーナス", dtick=1, range=[0, 12], domain=[0, 0.45],
-                         row=1, col=1)
-        fig.update_xaxes(title_text="礼装ボーナス", dtick=1, range=[0, 12], domain=[0.55, 1],
-                         row=1, col=2)
-        fig.update_yaxes(title_text="ドロップ数", dtick=dtick2, row=1, col=1)
-        fig.update_yaxes(title_text="", dtick=dtick3, row=1, col=2)
+        fig.update_xaxes(
+            title_text="礼装ボーナス",
+            dtick=1,
+            range=[0, 12],
+            domain=[0, 0.45],
+            row=1, col=1
+        )
+        fig.update_xaxes(
+            title_text="礼装ボーナス",
+            dtick=1,
+            range=[0, 12],
+            domain=[0.55, 1],
+            row=1, col=2
+        )
+        fig.update_yaxes(
+            title_text="ドロップ数",
+            dtick=dtick2,
+            row=1, col=1
+        )
+        fig.update_yaxes(
+            title_text="",
+            dtick=dtick3,
+            row=1, col=2
+        )
         fig.update_layout(
-            height=570, width=1000,
+            height=570,
+            width=1000,
             title={
                 'text':"イベントアイテムの平均ドロップ数",
-                'x':0.45, 'y':0.985,
+                'x':0.45,
+                'y':0.985,
                 'xanchor': 'center',
                 'font':dict(size=15)
             },
@@ -891,10 +975,17 @@ def plt_event_line(df):
             template=template,
             legend=dict(x=1.005, y=1),
             margin=dict(l=70, t=65, b=55, r=90, pad=0, autoexpand=False),
-            paper_bgcolor='white'
+            paper_bgcolor='LightSteelBlue' # 'white' "LightSteelBlue"
         )
-        offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-        export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            }
+        )
+        if args.imgdir != None:
+            export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
     # 1種類の場合は、1つグラフを表示
     else:
@@ -931,7 +1022,8 @@ def plt_event_line(df):
             paper_bgcolor='white'
         )
         offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-        export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
+        if args.imgdir != None:
+            export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
 def plt_line_matplot(df):
     """
@@ -1035,7 +1127,8 @@ def plt_sunburst(df):
         height=600, width=1000, title={'text':"イベントアイテムの割合",'x':0.5,'xanchor': 'center'},
         font=dict(size=12), template=template, legend = dict(x = 1.005, y = 1))
     offline.iplot(fig, filename = 'イベントアイテム',  config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-    export_img(fig, 'イベントアイテムの割合')
+    if args.imgdir != None:
+        export_img(fig, 'イベントアイテムの割合')
 
 def plt_simple_parallel_coordinates(df):
     """
@@ -1119,7 +1212,8 @@ def plt_parallel_coordinates(df):
         # plot_bgcolor='gold' # 'rgba(0,0,0,0)'
     )
     offline.plot(fig, filename = 'parallel_coordinates.html', config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]}, auto_open=True)
-    export_img(fig, 'parallel_coordinates')
+    if args.imgdir != None:
+        export_img(fig, 'parallel_coordinates')
 
 def plts(df):
     print('\rグラフの描画開始', end='')
