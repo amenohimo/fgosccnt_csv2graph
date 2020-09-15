@@ -833,8 +833,7 @@ def plt_event_line(df):
     """
         ボーナス毎のイベントアイテムのドロップ数を線形グラフを表示する
     """
-    from tabulate import tabulate # コード確認用
-    
+   
     ##  イベントアイテムに使用するDF1
     #       TODO 変数名を考える
     #
@@ -892,8 +891,6 @@ def plt_event_line(df):
         index=['+' + str(i) for i in range(13)]
     )
 
-
-
     ##  イベントアイテムに使用するDF3
     #       TODO 変数名を考える
 
@@ -923,6 +920,7 @@ def plt_event_line(df):
             E_df3[re.search('.+(?=\(x\d)', i).group(0)] += E_df2[i] # 既にあれば加算
 
     # 確認用コード
+    # from tabulate import tabulate # コード確認用
     # print()
     # print(tabulate(E_df3, E_df3.columns, tablefmt='github', showindex=True))
 
@@ -1039,8 +1037,17 @@ def plt_event_line(df):
                     mode='lines+markers'
                 )
             )
-        fig.update_xaxes(title_text="概念礼装ボーナス", dtick=1, range=[0, 12], domain=[0, 1])
-        fig.update_yaxes(title_text="ドロップ数", title_standoff=5, dtick=dtick3)
+        fig.update_xaxes(
+            title_text="概念礼装ボーナス",
+            dtick=1,
+            range=[0, 12],
+            domain=[0, 1]
+        )
+        fig.update_yaxes(
+            title_text="ドロップ数",
+            title_standoff=5,
+            dtick=dtick3
+        )
         fig.update_layout(
             height=550, width=480,
             title={
@@ -1198,7 +1205,19 @@ def plt_simple_parallel_coordinates(df):
         color_continuous_scale=px.colors.diverging.Portland,
         height=800, width=1300
     )
-    offline.plot(fig, filename = 'parallel_coordinates.html', config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]}, auto_open=True)
+    # offline.plot(fig, filename = 'parallel_coordinates.html', config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]}, auto_open=True)
+    if args.web:
+        offline.iplot(
+            fig,
+            filename = 'simple_parallel_coordinates.html',
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            },
+            auto_open=True
+        )
+    if args.imgdir != None:
+        export_img(fig, 'simple_parallel_coordinates')
 
 def plt_parallel_coordinates(df):
     """
@@ -1216,7 +1235,6 @@ def plt_parallel_coordinates(df):
             `plotly.colors.cyclical`: 曜日・日・年など周期的構造がある場合に優先
             `colors.sequential`: 汎用性が高いので連続データなら何でも
 
-        TODO png で保存するオプションを追加する
         TODO html で保存するオプションを追加する
     """
     df = drop_filename(df)
@@ -1261,7 +1279,17 @@ def plt_parallel_coordinates(df):
         paper_bgcolor='white'#, #'black' # "LightSteelBlue" # 視認性はデータの把握に重要なのでいい設定を探す
         # plot_bgcolor='gold' # 'rgba(0,0,0,0)'
     )
-    offline.plot(fig, filename = 'parallel_coordinates.html', config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]}, auto_open=True)
+    # offline.plot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+    if args.web:
+        offline.iplot(
+            fig,
+            filename = 'parallel_coordinates.html',
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            },
+            auto_open=True
+        )
     if args.imgdir != None:
         export_img(fig, 'parallel_coordinates')
 
