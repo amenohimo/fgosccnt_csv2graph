@@ -219,7 +219,14 @@ def plt_Ridgeline(df):
     fig.update_traces(orientation='h', side='positive', width=2, points=False)
     fig.update_xaxes(title_text="ドロップ数", dtick=1)
     # fig.update_layout(xaxis_showgrid=False, xaxis_zeroline=False)
-    offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+    if args.web:
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            }
+        )
     if args.imgdir != None:
         export_img(fig, '稜線図')
 
@@ -271,7 +278,14 @@ def plt_violine(df):
     ymax = df.max().values.max()
     dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
     fig.update_yaxes(title_text="", dtick=dtick)
-    offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+    if args.web:
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            }
+        )
     if args.imgdir != None:
         export_img(fig, 'ヴァイオリンプロット')
 
@@ -323,7 +337,14 @@ def plt_box(df):
     ymax = df.max().values.max()
     dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
     fig.update_yaxes(title_text="", dtick=dtick)
-    offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+    if args.web:
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            }
+        )
     if args.imgdir != None:
         export_img(fig, '箱ひげ図')
 
@@ -533,8 +554,16 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
 
         title={'text':title,'x':0.5,'y':0.985,'xanchor': 'center', 'font':dict(size=15)},
         font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
-        margin=dict(l=left, t=TOP, b=BOTTOM, r=right, pad=0, autoexpand=False))
-    offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+        margin=dict(l=left, t=TOP, b=BOTTOM, r=right, pad=0, autoexpand=False)
+    )
+    if args.web:
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            }
+        )
     if args.imgdir != None:
         export_img(fig, title)
 
@@ -776,13 +805,14 @@ def plt_table(df):
             autoexpand=False
         )
     )
-    offline.iplot(
-        fig,
-        config={
-            "displaylogo":False,
-            "modeBarButtonsToRemove":["sendDataToCloud"]
-        }
-    )
+    if args.web:
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            }
+        )
     if args.imgdir != None:
         export_img(fig, '0_table')
 
@@ -850,7 +880,7 @@ def plt_event_line(df):
     E_df2 = pd.DataFrame(
         np.array(
             [
-                # ボーナス礼装装備時の1周あたりアイテムドロップ数 [アイテムドロップ数/周]
+                # ボーナス礼装装備時の1周あたり平均アイテムドロップ数 [アイテムドロップ数/周]
                 # (基本束数 + ボーナス増加数) [アイテムドロップ数/枠] * 平均枠数 [枠/周]
                 # ex. (3 + 0~12) * 1002 / 66
                 # ex. (3 + 0~12) * 153 / 66
@@ -918,15 +948,31 @@ def plt_event_line(df):
         from plotly.subplots import make_subplots
         template = "seaborn"
         fig = make_subplots(rows=1, cols=2, subplot_titles=('枠毎の平均ドロップ数', 'アイテム毎の平均ドロップ数'))
+        
+        # 左
         for i in range(len(E_df2.columns)):
             fig.add_trace(
                 go.Scatter(
-                    x=E_df2.index,
-                    y=E_df2[E_df2.columns[i]],
+                    x=E_df2.index, # 礼装ボーナス増加数
+                    y=E_df2[E_df2.columns[i]], # 平均アイテムドロップ数
                     name=E_df2.columns[i]
                 ),
                 row=1, col=1
             )
+        fig.update_xaxes(
+            title_text="礼装ボーナス",
+            dtick=1,
+            range=[0, 12],
+            domain=[0, 0.45],
+            row=1, col=1
+        )
+        fig.update_yaxes(
+            title_text="ドロップ数",
+            dtick=dtick2,
+            row=1, col=1
+        )
+
+        # 右
         for i in range(len(E_df3.columns)):
             fig.add_trace(
                 go.Scatter(
@@ -940,26 +986,15 @@ def plt_event_line(df):
             title_text="礼装ボーナス",
             dtick=1,
             range=[0, 12],
-            domain=[0, 0.45],
-            row=1, col=1
-        )
-        fig.update_xaxes(
-            title_text="礼装ボーナス",
-            dtick=1,
-            range=[0, 12],
             domain=[0.55, 1],
             row=1, col=2
-        )
-        fig.update_yaxes(
-            title_text="ドロップ数",
-            dtick=dtick2,
-            row=1, col=1
         )
         fig.update_yaxes(
             title_text="",
             dtick=dtick3,
             row=1, col=2
         )
+
         fig.update_layout(
             height=570,
             width=1000,
@@ -977,13 +1012,14 @@ def plt_event_line(df):
             margin=dict(l=70, t=65, b=55, r=90, pad=0, autoexpand=False),
             paper_bgcolor='LightSteelBlue' # 'white' "LightSteelBlue"
         )
-        offline.iplot(
-            fig,
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            }
-        )
+        if args.web:
+            offline.iplot(
+                fig,
+                config={
+                    "displaylogo":False,
+                    "modeBarButtonsToRemove":["sendDataToCloud"]
+                }
+            )
         if args.imgdir != None:
             export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
@@ -1021,7 +1057,14 @@ def plt_event_line(df):
             margin=dict(l=70, t=50, b=55, r=38, pad=0, autoexpand=False),
             paper_bgcolor='white'
         )
-        offline.iplot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+        if args.web:
+            offline.iplot(
+                fig,
+                config={
+                    "displaylogo":False,
+                    "modeBarButtonsToRemove":["sendDataToCloud"]
+                }
+            )
         if args.imgdir != None:
             export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
@@ -1126,7 +1169,14 @@ def plt_sunburst(df):
     fig.update_layout(
         height=600, width=1000, title={'text':"イベントアイテムの割合",'x':0.5,'xanchor': 'center'},
         font=dict(size=12), template=template, legend = dict(x = 1.005, y = 1))
-    offline.iplot(fig, filename = 'イベントアイテム',  config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
+    if args.web:
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"]
+            }
+        )
     if args.imgdir != None:
         export_img(fig, 'イベントアイテムの割合')
 
@@ -1243,6 +1293,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CSVからグラフを作成する')
     parser.add_argument('filenames', help='入力ファイル', nargs='*')
     parser.add_argument('--version', action='version', version=progname + " " + version)
+    parser.add_argument('-w', '--web', action='store_true', help='webブラウザに出力する')
     parser.add_argument('-i', '--imgdir', help='画像ファイルの出力フォルダ')
     parser.add_argument('-a', '--all', action='store_true', help='全てのプロットを作成')
     parser.add_argument('-v', '--violine', action='store_true', help='ヴァイオリンプロットを作成')
@@ -1254,6 +1305,10 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--event', action='store_true', help='イベントアイテムのプロットを作成')
 
     args = parser.parse_args()
+
+    # 出力先が指定されていない場合はwebブラウザに出力
+    if (args.imgdir == None) & (args.web == False):
+        args.web = True
 
     # ファイルが指定された場合
     # csvファイルを引数として受け取る
