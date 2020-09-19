@@ -1207,7 +1207,7 @@ def plt_simple_parallel_coordinates(df):
     )
     # offline.plot(fig, filename = 'parallel_coordinates.html', config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]}, auto_open=True)
     if args.web:
-        offline.iplot(
+        offline.plot(
             fig,
             filename = 'simple_parallel_coordinates.html',
             config={
@@ -1281,7 +1281,7 @@ def plt_parallel_coordinates(df):
     )
     # offline.plot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
     if args.web:
-        offline.iplot(
+        offline.plot(
             fig,
             filename = 'parallel_coordinates.html',
             config={
