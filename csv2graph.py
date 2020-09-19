@@ -814,7 +814,17 @@ def plt_table(df):
             }
         )
     if args.imgdir != None:
-        export_img(fig, '0_table')
+        export_img(fig, 'table')
+    if args.htmldir != None:
+        exporpt_html(fig, 'table')       
+
+def exporpt_html(fig, title):
+    html_dir = Path(args.htmldir)
+    if not html_dir.parent.is_dir():
+        html_dir.parent.mkdir(parents=True)
+    html_path = html_dir / Path(get_quest_name() + '-' + title + ".html")
+    fig.write_html(fig, html_path)
+
 
 def is_integer(n):
     """
@@ -1323,6 +1333,7 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version', version=progname + " " + version)
     parser.add_argument('-w', '--web', action='store_true', help='webブラウザに出力する')
     parser.add_argument('-i', '--imgdir', help='画像ファイルの出力フォルダ')
+    parser.add_argument('-html', '--htmldir', help='画像ファイルの出力フォルダ')
     parser.add_argument('-a', '--all', action='store_true', help='全てのプロットを作成')
     parser.add_argument('-v', '--violine', action='store_true', help='ヴァイオリンプロットを作成')
     parser.add_argument('-b', '--box', action='store_true', help='ボックスプロット(箱ひげ図)を作成')
@@ -1336,6 +1347,9 @@ if __name__ == '__main__':
 
     # 出力先が指定されていない場合はwebブラウザに出力
     if (args.imgdir == None) & (args.web == False):
+        args.web = True
+
+    if args.all:
         args.web = True
 
     # ファイルが指定された場合
