@@ -53,28 +53,40 @@ def get_correct_20plus_df(df):
     """
 
     # 20+ の行番号を取得
-    row_20p = df[df['ドロ数'] == '20+'].index.tolist()    # Int64Index([  1,   7,  23,  31,  ..., 113, 115, 121, 125], dtype='int64')
-    row_20p.reverse()    # [125, 121, 115, 113, ..., 31, 23, 1]
+    idxs_20p = df[df['ドロ数'] == '20+'].index.tolist()    # Int64Index([  1,   7,  23,  31,  ..., 113, 115, 121, 125], dtype='int64')
+    idxs_20p.reverse()    # [125, 121, 115, 113, ..., 31, 23, 1]
 
-    for i in range(0, len(row_20p), 1):
+    # 20+ の行に対して以下の処理を繰り返す
+    for i, idx_20p in enumerate(idxs_20p):
 
-        # ドロ数が20を超える場合のアイテムのドロップ数を計算して上書きする
-        df.iloc[row_20p[i]:row_20p[i]+1] = df.iloc[row_20p[i]:row_20p[i]+1, :3].join(
+        # filename, ドロ数, 報酬QP
+        # df.iloc[idxs_20p[i]:idxs_20p[i]+1] = df.iloc[idxs_20p[i]:idxs_20p[i]+1, :3].join(
+        df.iloc[idx_20p:idx_20p+1] = df.iloc[idx_20p:idx_20p+1, :3].join(
+
+            # 礼装～
             pd.DataFrame(
-                (df.iloc[row_20p[i]:row_20p[i]+1, 3:len(df.columns)].values +
-                 df.iloc[row_20p[i]+1:row_20p[i]+1+1, 3:len(df.columns)].values),
-                columns=df.iloc[row_20p[i]:row_20p[i]+1, 3:len(df.columns)].columns,
-                index=df.iloc[row_20p[i]:row_20p[i]+1].index
+                (
+
+                    # 20+の行
+                    df.iloc[idx_20p:idx_20p+1, 3:len(df.columns)].values +
+
+                    # 20+の次の行
+                    df.iloc[idx_20p+1:idx_20p+1+1, 3:len(df.columns)].values
+
+                ),
+                columns=df.iloc[idx_20p:idx_20p+1, 3:len(df.columns)].columns,
+                # index=df.iloc[idxs_20p[i]:idxs_20p[i]+1].index
+                index=[idx_20p]
             )
         )
 
         # 20+ を正しい周回数に修正する
-        df.iloc[row_20p[i]:row_20p[i]+1, 1:2] = (
-            20 + int(df.iloc[row_20p[i]+1:row_20p[i]+2, 1:2].values[0][0])
+        df.iloc[idxs_20p[i]:idxs_20p[i]+1, 1:2] = (
+            20 + int(df.iloc[idxs_20p[i]+1:idxs_20p[i]+2, 1:2].values[0][0])
         )
 
         # 既に足した行　(次の行)　を削除する
-        df = df.drop(row_20p[i]+1)
+        df = df.drop(idxs_20p[i]+1)
 
     df = df.reset_index(drop=True)
     return df
