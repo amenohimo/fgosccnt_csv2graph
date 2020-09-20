@@ -167,7 +167,7 @@ def make_df(csv_path, total_row=False):
         return None
 
     # 合計の行を除去
-    if not total_row:        
+    if not total_row:
         try:
             # df = df.drop(df[df['filename'].str.contains('合計', na=False)].index[0])
             df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
