@@ -196,6 +196,10 @@ def make_df(csv_path, total_row=False):
     except IndexError: # QP0が存在しない場合しなければ次の処理へ
         pass
 
+    # 合計行のドロ数を0から空欄に変更
+    if total_row:
+        df.iloc[0:1, 1:2] = ''
+
     print('\rDataFrame作成完了', end='')
     
     return df
