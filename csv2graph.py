@@ -52,6 +52,46 @@ def get_correct_20plus_df(df):
     20+ になっているドロ数を正しい数に直して返す
     """
 
+    # 20++ の行番号を取得
+    idxs_20pp = df[df['ドロ数'] == '20++'].index.tolist()    # Int64Index([  1,   7,  23,  31,  ..., 113, 115, 121, 125], dtype='int64')
+    idxs_20pp.reverse()    # [125, 121, 115, 113, ..., 31, 23, 1]
+
+    # 20++ の行に対して以下の処理を繰り返す
+    # 62ドロまで対応
+    for i, idx_20pp in enumerate(idxs_20pp):
+
+        # filename, ドロ数, 報酬QP
+        df.iloc[idx_20pp:idx_20pp+1] = df.iloc[idx_20pp:idx_20pp+1, :3].join(
+
+            # 礼装～
+            pd.DataFrame(
+                (
+
+                    # 20++の行
+                    df.iloc[idx_20pp:idx_20pp+1, 3:len(df.columns)].values +
+
+                    # 20++の次の行
+                    df.iloc[idx_20pp+1:idx_20pp+2, 3:len(df.columns)].values +
+
+                    # 20++の下2行目
+                    df.iloc[idx_20pp+2:idx_20pp+3, 3:len(df.columns)].values
+                ),
+                columns=df.iloc[idx_20pp:idx_20pp+1, 3:len(df.columns)].columns,
+                index=[idx_20pp]
+            )
+        )
+
+        # 20++ を正しい周回数に修正する
+        df.iloc[idx_20pp:idx_20pp+1, 1:2] = (
+            20 + 21 + int(df.iloc[idx_20pp+2:idx_20pp+3, 1:2].values[0][0])
+        )
+
+        # 既に足した行　(次の2行)　を削除する
+        df = df.drop(idx_20pp+1)
+        df = df.drop(idx_20pp+2)
+
+    df = df.reset_index(drop=True)
+
     # 20+ の行番号を取得
     idxs_20p = df[df['ドロ数'] == '20+'].index.tolist()    # Int64Index([  1,   7,  23,  31,  ..., 113, 115, 121, 125], dtype='int64')
     idxs_20p.reverse()    # [125, 121, 115, 113, ..., 31, 23, 1]
@@ -60,7 +100,6 @@ def get_correct_20plus_df(df):
     for i, idx_20p in enumerate(idxs_20p):
 
         # filename, ドロ数, 報酬QP
-        # df.iloc[idxs_20p[i]:idxs_20p[i]+1] = df.iloc[idxs_20p[i]:idxs_20p[i]+1, :3].join(
         df.iloc[idx_20p:idx_20p+1] = df.iloc[idx_20p:idx_20p+1, :3].join(
 
             # 礼装～
@@ -75,20 +114,20 @@ def get_correct_20plus_df(df):
 
                 ),
                 columns=df.iloc[idx_20p:idx_20p+1, 3:len(df.columns)].columns,
-                # index=df.iloc[idxs_20p[i]:idxs_20p[i]+1].index
                 index=[idx_20p]
             )
         )
 
         # 20+ を正しい周回数に修正する
-        df.iloc[idxs_20p[i]:idxs_20p[i]+1, 1:2] = (
-            20 + int(df.iloc[idxs_20p[i]+1:idxs_20p[i]+2, 1:2].values[0][0])
+        df.iloc[idx_20p:idx_20p+1, 1:2] = (
+            20 + int(df.iloc[idx_20p+1:idx_20p+2, 1:2].values[0][0])
         )
 
         # 既に足した行　(次の行)　を削除する
-        df = df.drop(idxs_20p[i]+1)
+        df = df.drop(idx_20p+1)
 
     df = df.reset_index(drop=True)
+
     return df
 
 def make_df(csv_path, total_row=False):
@@ -140,7 +179,7 @@ def make_df(csv_path, total_row=False):
 
     # ドロ数の列 20+が出現した行以降は全てstr型になるため、数値を数値型に変換
     for i, row in enumerate(df[df.columns[1]]):
-        if not row == '20+':
+        if not ((row == '20+') or (row == '20++') or (row == '21+')):
             df.iloc[i, 1] = np.uint16(row)
 
     # 3列目以降は numpy.float64 として読み込まれるのでintにキャスト
