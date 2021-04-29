@@ -45,7 +45,7 @@ def write_csv(csv_path, total_row=True):
             encoding=args.character_code,
             index=False
         )
-        print('\rcsv書き出し完了 ')
+        print('\rcsv書き出し完了  ')
 
         
 if __name__ == '__main__':
