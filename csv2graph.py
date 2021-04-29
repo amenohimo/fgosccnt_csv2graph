@@ -153,7 +153,7 @@ def make_df(csv_path, total_row=False):
         print(f'\rファイルが空の可能性があります:\n{csv_path}')
         return None
 
-    print('\rcsv読み込み完了', end='')
+    print('\rcsv読み込み完了  ', end='')
 
     # csvにクエスト名があれば利用
     global quest_name
