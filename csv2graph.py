@@ -1326,7 +1326,7 @@ def plt_parallel_coordinates(df):
             dict(range=[rmin, rmax],
         #          constraintrange=[cmin, cmax],  # TODO　引数で渡す？
                 tickvals=list(set(df[df.columns[i]].tolist())), # ユニークな値をメモリ表示用に使用
-                label=df.columns[i][:label_len], # 長すぎると重なって読めなくなるので、適度にカットする
+                label=df.columns[i].replace('コイン', '').replace('報酬', '')[:label_len], # 長すぎると重なって読めなくなるので、適度にカットする
                 values=df[df.columns[i]]
             )
         )
