@@ -1064,7 +1064,7 @@ def plt_event_line(df):
             title={
                 'text':"イベントアイテムの平均ドロップ数",
                 'x':0.45,
-                'y':0.985,
+                'y':0.98,
                 'xanchor': 'center',
                 'font':dict(size=15)
             },
@@ -1072,8 +1072,8 @@ def plt_event_line(df):
             annotations=[dict(font=dict(size=14))],
             template=template,
             legend=dict(x=1.005, y=1),
-            margin=dict(l=70, t=65, b=55, r=90, pad=0, autoexpand=False),
-            paper_bgcolor='LightSteelBlue' # 'white' "LightSteelBlue"
+            margin=dict(l=70, t=65, b=55, r=120, pad=0, autoexpand=False),
+            paper_bgcolor='white' # 'white' "LightSteelBlue"
         )
         if args.web:
             offline.iplot(

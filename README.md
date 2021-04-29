@@ -20,10 +20,15 @@
 
 - python 3.6以降
 - plotly==4.8.1
+- numpy
 - pandas
+- plotly
 - kaleido
 - matplotlib
 - seaborn
+- japanize_matplotlib
+- cufflinks
+
 
 ### 使い方
 
