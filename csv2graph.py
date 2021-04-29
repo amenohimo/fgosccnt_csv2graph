@@ -1405,7 +1405,6 @@ if __name__ == '__main__':
         args.web = True
 
     if args.all:
-        args.web = True
         args.web = False
 
     # ファイルが指定された場合
