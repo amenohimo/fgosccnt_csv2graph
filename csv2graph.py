@@ -1406,6 +1406,7 @@ if __name__ == '__main__':
 
     if args.all:
         args.web = True
+        args.web = False
 
     # ファイルが指定された場合
     # csvファイルを引数として受け取る
