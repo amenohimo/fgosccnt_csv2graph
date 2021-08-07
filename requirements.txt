@@ -1,0 +1,11 @@
+pandas
+plotly
+matplotlib
+seaborn
+japanize_matplotlib
+kaleido
+cufflinks
+
+
+
+
