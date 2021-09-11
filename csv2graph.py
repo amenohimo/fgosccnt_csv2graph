@@ -47,89 +47,6 @@ warnings.simplefilter('ignore', FutureWarning)
 pd.options.plotting.backend = "plotly"
 quest_name = ''
 
-def get_correct_20plus_df(df):
-    """
-    20+ になっているドロ数を正しい数に直して返す
-    """
-
-    # 20++ の行番号を取得
-    idxs_20pp = df[df['ドロ数'] == '20++'].index.tolist()    # Int64Index([  1,   7,  23,  31,  ..., 113, 115, 121, 125], dtype='int64')
-    idxs_20pp.reverse()    # [125, 121, 115, 113, ..., 31, 23, 1]
-
-    # 20++ の行に対して以下の処理を繰り返す
-    # 62ドロまで対応
-    for i, idx_20pp in enumerate(idxs_20pp):
-
-        # filename, ドロ数, 報酬QP
-        df.iloc[idx_20pp:idx_20pp+1] = df.iloc[idx_20pp:idx_20pp+1, :3].join(
-
-            # 礼装～
-            pd.DataFrame(
-                (
-
-                    # 20++の行
-                    df.iloc[idx_20pp:idx_20pp+1, 3:len(df.columns)].values +
-
-                    # 20++の次の行
-                    df.iloc[idx_20pp+1:idx_20pp+2, 3:len(df.columns)].values +
-
-                    # 20++の下2行目
-                    df.iloc[idx_20pp+2:idx_20pp+3, 3:len(df.columns)].values
-                ),
-                columns=df.iloc[idx_20pp:idx_20pp+1, 3:len(df.columns)].columns,
-                index=[idx_20pp]
-            )
-        )
-
-        # 20++ を正しい周回数に修正する
-        df.iloc[idx_20pp:idx_20pp+1, 1:2] = (
-            20 + 21 + int(df.iloc[idx_20pp+2:idx_20pp+3, 1:2].values[0][0])
-        )
-
-        # 既に足した行　(次の2行)　を削除する
-        df = df.drop(idx_20pp+1)
-        df = df.drop(idx_20pp+2)
-
-    df = df.reset_index(drop=True)
-
-    # 20+ の行番号を取得
-    idxs_20p = df[df['ドロ数'] == '20+'].index.tolist()    # Int64Index([  1,   7,  23,  31,  ..., 113, 115, 121, 125], dtype='int64')
-    idxs_20p.reverse()    # [125, 121, 115, 113, ..., 31, 23, 1]
-
-    # 20+ の行に対して以下の処理を繰り返す
-    for i, idx_20p in enumerate(idxs_20p):
-
-        # filename, ドロ数, 報酬QP
-        df.iloc[idx_20p:idx_20p+1] = df.iloc[idx_20p:idx_20p+1, :3].join(
-
-            # 礼装～
-            pd.DataFrame(
-                (
-
-                    # 20+の行
-                    df.iloc[idx_20p:idx_20p+1, 3:len(df.columns)].values +
-
-                    # 20+の次の行
-                    df.iloc[idx_20p+1:idx_20p+1+1, 3:len(df.columns)].values
-
-                ),
-                columns=df.iloc[idx_20p:idx_20p+1, 3:len(df.columns)].columns,
-                index=[idx_20p]
-            )
-        )
-
-        # 20+ を正しい周回数に修正する
-        df.iloc[idx_20p:idx_20p+1, 1:2] = (
-            20 + int(df.iloc[idx_20p+1:idx_20p+2, 1:2].values[0][0])
-        )
-
-        # 既に足した行　(次の行)　を削除する
-        df = df.drop(idx_20p+1)
-
-    df = df.reset_index(drop=True)
-
-    return df
-
 def make_df(csv_path, total_row=False):
     """
     DataFrameを作成する
@@ -143,7 +60,7 @@ def make_df(csv_path, total_row=False):
     Returns:
         DataFrame: プロットや統計処理に使用するDataFrame
     """
-    print('\rDataFrame作成開始', end='')
+    # print('\rDataFrame作成開始', end='')
     try:
         df = pd.read_csv(csv_path, encoding='shift-jis')
     except UnicodeDecodeError:
@@ -153,12 +70,18 @@ def make_df(csv_path, total_row=False):
         print(f'\rファイルが空の可能性があります:\n{csv_path}')
         return None
 
-    print('\rcsv読み込み完了  ', end='')
+    # print('\rcsv読み込み完了  ', end='')
+
+    # 新しい仕様かどうか
+    # ドロ数 63, 42, 21, etc: True
+    # ドロ数 20++, 21+, 20+ : False
+    isNewSpecifications = 'アイテム数' in df.columns
 
     # csvにクエスト名があれば利用
     global quest_name
     try:
-        quest_name = df[df['ドロ数'].isnull()].values[0][0]
+        # quest_name = df[df['ドロ数'].isnull()].values[0][0]
+        quest_name = df.values[0][0]
     except IndexError:
         # IndexError が出るのは、1周分のデータしかないか、重複やmissingの可能性がある
         pass
@@ -170,24 +93,139 @@ def make_df(csv_path, total_row=False):
     if not total_row:
         try:
             # df = df.drop(df[df['filename'].str.contains('合計', na=False)].index[0])
-            df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
+            # df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
+            df = df.drop(index=0)        # ドロ数の合計を出しているファイルがあることを想定
             df = df.reset_index(drop=True)
         except IndexError:
             print('合計の行を取り除く：既に合計の行は取り除かれているか、始めから存在しません')
 
     df = df.fillna(0)
 
-    # ドロ数の列 20+が出現した行以降は全てstr型になるため、数値を数値型に変換
-    for i, row in enumerate(df[df.columns[1]]):
-        if not ((row == '20+') or (row == '20++') or (row == '21+')):
-            df.iloc[i, 1] = np.uint16(row)
+    if not isNewSpecifications:
+        # ドロ数の列 20+が出現した行以降は全てstr型になるため、str型になっている数値を数値型に変換
+        for i, row in enumerate(df[df.columns[1]]):
+            if not ((row == '20+') or (row == '20++') or (row == '21+')):
+                df.iloc[i, 1] = np.uint16(row)
 
-    # 3列目以降は numpy.float64 として読み込まれるのでintにキャスト
+    # ドロ数より後の列は numpy.float64 として読み込まれるので numpy.uint16 にキャスト
     for col in df.columns:
         if type(df[col].values[0]) == np.float64:
             df[col] = df[col].astype(np.uint16)
 
-    df = get_correct_20plus_df(df)
+    ###
+    ### over 20 collections start
+    ###
+    ### idxs_two  : 2枚の画像を使ったカウントにおける 最初の1枚目のindex値 の配列 21-41ドロ
+    ### idxs_three: 3枚の画像を使ったカウントにおける 最初の1枚目のindex値 の配列 42-62ドロ
+    ###
+
+    # 文字列 報酬QP(+xxxx) を取得
+    QpColName = df.filter(like='報酬QP', axis=1).columns[0]
+    
+    # 報酬QP(+xxxx) の列の位置 この後の列はアイテムドロップ数であり、ドロ数によっては2-3枚の和をとる
+    QpColLoc = df.columns.get_loc(QpColName) + 1
+
+    #
+    # 42-62ドロ 
+    #
+
+    # 1枚目の行番号のリストを取得
+    if isNewSpecifications:
+        idxs_three = df.query('(42 <= ドロ数 <= 62) and (アイテム数 == 20)').index.tolist()
+    else:
+
+        # Int64Index([  1,   7,  ..., 121, 125], dtype='int64')
+        idxs_three = df[df['ドロ数'] == '20++'].index.tolist()
+    
+    # [125, 121, ..., 7, 1]
+    idxs_three.reverse()
+
+    # 42-62ドロ の行を1行にまとめる
+    for i, idx_three in enumerate(idxs_three):
+
+        # filename, ドロ数, (アイテム数), 報酬QP
+        df.iloc[idx_three: idx_three+1] = df.iloc[idx_three: idx_three+1, : QpColLoc].join(
+
+            # 礼装～
+            pd.DataFrame(
+                (
+
+                    # 0-20 の行
+                    df.iloc[idx_three: idx_three+1, QpColLoc: ].values +
+
+                    # 21-41 の行
+                    df.iloc[idx_three+1: idx_three+2, QpColLoc: ].values +
+
+                    # 42-62 の行
+                    df.iloc[idx_three+2: idx_three+3, QpColLoc: ].values
+                ),
+                columns=df.iloc[idx_three: idx_three+1, QpColLoc: ].columns,
+                index=[idx_three]
+            )
+        )
+
+        # 20++ を正しい周回数に修正する
+        if not isNewSpecifications:
+            df.iloc[idx_three:idx_three+1, 1:2] = (
+                20 + 21 + int(df.iloc[idx_three+2:idx_three+3, 1:2].values[0][0])
+            )
+
+        # 既に足した行　(次の2行)　を削除する
+        df = df.drop(idx_three+1)
+        df = df.drop(idx_three+2)
+
+    df = df.reset_index(drop=True)
+
+    #
+    # 21-41ドロ 
+    #
+
+    # 1枚目の行番号のリストを取得
+    if isNewSpecifications:
+        idxs_two = df.query('(21 <= ドロ数 <= 41) and (アイテム数 == 20)').index.tolist()
+    else:
+        idxs_two = df[df['ドロ数'] == '20+'].index.tolist()
+    idxs_two.reverse()
+
+    # 21-41ドロ の行を1行にまとめる
+    for i, idx_two in enumerate(idxs_two):
+
+        # filename, ドロ数, 報酬QP
+        df.iloc[idx_two: idx_two+1] = df.iloc[idx_two: idx_two+1, : QpColLoc].join(
+
+            # 礼装～
+            pd.DataFrame(
+                (
+
+                    # 0-20 の行
+                    df.iloc[idx_two: idx_two+1, QpColLoc: ].values +
+
+                    # 21-41 の行
+                    df.iloc[idx_two+1: idx_two+1+1, QpColLoc: ].values
+
+                ),
+                columns=df.iloc[idx_two: idx_two+1, QpColLoc: ].columns,
+                index=[idx_two]
+            )
+        )
+
+        # 20+ を正しい周回数に修正する
+        if not isNewSpecifications:
+            df.iloc[idx_two:idx_two+1, 1:2] = (
+                20 + int(df.iloc[idx_two+1:idx_two+2, 1:2].values[0][0])
+            )
+
+        # 既に足した行　(次の行)　を削除する
+        df = df.drop(idx_two+1)
+
+    df = df.reset_index(drop=True)
+    ###
+    ### over 20 collections end
+    ###
+
+    # アイテム数を削除
+    if isNewSpecifications:
+        df = df.drop(columns='アイテム数')
 
     # QPが0の行を取り除く (エラー発生行)
     try:
@@ -200,8 +238,8 @@ def make_df(csv_path, total_row=False):
     if total_row:
         df.iloc[0:1, 1:2] = ''
 
-    print('\rDataFrame作成完了', end='')
-    
+    # print('\rDataFrame作成完了', end='')
+
     return df
 
 def get_east_asian_width_count(text):
@@ -1361,7 +1399,7 @@ def plt_parallel_coordinates(df):
         export_img(fig, 'parallel_coordinates')
 
 def plts(df):
-    print('\rグラフの描画開始', end='')
+    # print('\rグラフの描画開始', end='')
     if args.table or args.all:
         plt_table(df)
     if args.pc or args.all:
@@ -1382,7 +1420,7 @@ def plts(df):
     if args.rate or args.all:
         plt_rate(df)
     # plt_Ridgeline(df)
-    print('\rグラフの描画完了', end='')
+    # print('\rグラフの描画完了', end='')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CSVからグラフを作成する')
@@ -1426,7 +1464,7 @@ if __name__ == '__main__':
 
     # ファイル名の指定がない場合は、テスト用のデータを実行
     else:
-        print('csvファイルの指定がないため、テストファイルによるプロットを実行します', end='')
+        # print('csvファイルの指定がないため、テストファイルによるプロットを実行します', end='')
         BASE_DIR = Path(__file__).resolve().parent
         args.all = True
 
@@ -1438,4 +1476,4 @@ if __name__ == '__main__':
         csv_path = BASE_DIR / 'test_csv_files\Silent_garden_B.csv'
         plts(make_df(str(csv_path)))
 
-    print('\r処理完了        ')
+    # print('\r処理完了        ')
