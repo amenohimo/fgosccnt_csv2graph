@@ -60,7 +60,6 @@ def make_df(csv_path, total_row=False):
     Returns:
         DataFrame: プロットや統計処理に使用するDataFrame
     """
-
     # print('\rDataFrame作成開始', end='')
     print('\r処理開始', end='')
 
@@ -107,10 +106,12 @@ def make_df(csv_path, total_row=False):
             # df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
             df = df.drop(index = 0)        # ドロ数の合計を出しているファイルがあることを想定
             df = df.reset_index(drop = True)
+
         except IndexError:
             print('合計の行を取り除く：既に合計の行は取り除かれているか、始めから存在しません')
 
     df = df.fillna(0)
+
 
     # ドロ数の列 20+が出現した行以降は全てstr型になるため、str型になっている数値を数値型に変換
     if not isNewSpecifications:
@@ -167,6 +168,7 @@ def make_df(csv_path, total_row=False):
     for i, idx_three in enumerate(idxs_three):
 
         # filename, ドロ数, (アイテム数), 報酬QP
+
         df.iloc[idx_three: idx_three + 1] = df.iloc[idx_three: idx_three + 1, : QpColLoc].join(
 
             # 礼装～
@@ -174,6 +176,7 @@ def make_df(csv_path, total_row=False):
                 (
 
                     # 0-20 の行
+
                     df.iloc[idx_three: idx_three + 1, QpColLoc: ].values +
 
                     # 21-41 の行
@@ -189,6 +192,7 @@ def make_df(csv_path, total_row=False):
 
         # 20++ を正しい周回数に修正する
         if not isNewSpecifications:
+
             df.iloc[idx_three: idx_three + 1, 1: 2] = (
                 20 + 21 + int(df.iloc[idx_three + 2: idx_three + 3, 1: 2].values[0][0])
             )
@@ -252,7 +256,7 @@ def make_df(csv_path, total_row=False):
         df = df.drop(idx_two + 1)
 
     df = df.reset_index(drop = True)
-    ###
+        ###
     ### over 20 collections end
     ###
 
