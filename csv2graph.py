@@ -61,8 +61,11 @@ def make_df(csv_path, total_row=False):
     Returns:
         DataFrame: プロットや統計処理に使用するDataFrame
     """
+
     # print('\rDataFrame作成開始', end='')
     print('\r処理開始', end='')
+
+    # csvファイルの読込
     try:
         df = pd.read_csv(csv_path, encoding='shift-jis')
     except UnicodeDecodeError:
@@ -110,8 +113,8 @@ def make_df(csv_path, total_row=False):
 
     df = df.fillna(0)
 
+    # ドロ数の列 20+が出現した行以降は全てstr型になるため、str型になっている数値を数値型に変換
     if not isNewSpecifications:
-        # ドロ数の列 20+が出現した行以降は全てstr型になるため、str型になっている数値を数値型に変換
         for i, row in enumerate(df[df.columns[1]]):
             if not ((row == '20+') or (row == '20++') or (row == '21+')):
                 df.iloc[i, 1] = np.uint16(row)
