@@ -175,8 +175,8 @@ def make_df(csv_path, total_row=False):
 
         # 20++ を正しい周回数に修正する
         if not isNewSpecifications:
-            df.iloc[idx_three:idx_three+1, 1:2] = (
-                20 + 21 + int(df.iloc[idx_three+2:idx_three+3, 1:2].values[0][0])
+            df.iloc[idx_three: idx_three+1, 1:2] = (
+                20 + 21 + int(df.iloc[idx_three+2: idx_three+3, 1:2].values[0][0])
             )
 
         # 既に足した行　(次の2行)　を削除する
