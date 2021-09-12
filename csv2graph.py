@@ -23,6 +23,7 @@ import warnings
 import traceback
 import re
 from pathlib import Path
+import math
 import numpy as np
 import pandas as pd
 import plotly.offline as offline
@@ -90,8 +91,15 @@ def make_df(csv_path, total_row=False):
         print('UnboundLocalError')
         return None
 
+    # 文字列 報酬QP(+xxxx) を取得
+    try:
+        QpColName = df.filter(like='報酬QP', axis=1).columns[0]
+    except IndexError:
+        print('csvの1行目に 報酬QP が含まれていません')
+
     # 合計の行を除去
-    if not total_row:
+    # 報酬QP(+xxxx)の0個目の要素が1より大きければ、合計行とする
+    if not total_row and (df[QpColName][0] > 1):
         try:
             # df = df.drop(df[df['filename'].str.contains('合計', na=False)].index[0])
             # df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
@@ -119,9 +127,6 @@ def make_df(csv_path, total_row=False):
     ### idxs_two  : 2枚の画像を使ったカウントにおける 最初の1枚目のindex値 の配列 21-41ドロ
     ### idxs_three: 3枚の画像を使ったカウントにおける 最初の1枚目のindex値 の配列 42-62ドロ
     ###
-
-    # 文字列 報酬QP(+xxxx) を取得
-    QpColName = df.filter(like='報酬QP', axis=1).columns[0]
     
     # 報酬QP(+xxxx) の列の位置 この後の列はアイテムドロップ数であり、ドロ数によっては2-3枚の和をとる
     QpColLoc = df.columns.get_loc(QpColName) + 1
