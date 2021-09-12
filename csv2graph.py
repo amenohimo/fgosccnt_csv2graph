@@ -140,6 +140,21 @@ def make_df(csv_path, total_row=False):
     # 1枚目の行番号のリストを取得
     if isNewSpecifications:
         idxs_three = df.query('(42 <= ドロ数 <= 62) and (アイテム数 == 20)').index.tolist()
+
+        # 61ドロの場合、ドロ数61/アイテム数20 が2行現れるため、1行目だけにフィルタリングする
+        # |ドロ数|アイテム数|
+        # |-----|----------|
+        # |* 61 |    20    |
+        # |  61 |    21    |
+        # |  61 |    20    |
+        previousNum = -3
+        tmp = []
+        for i in idxs_three:
+            if i - previousNum >= 3:
+                tmp.append(i)
+                previousNum = i
+        idxs_three = tmp
+
     else:
 
         # Int64Index([  1,   7,  ..., 121, 125], dtype='int64')
@@ -191,6 +206,16 @@ def make_df(csv_path, total_row=False):
     # 1枚目の行番号のリストを取得
     if isNewSpecifications:
         idxs_two = df.query('(21 <= ドロ数 <= 41) and (アイテム数 == 20)').index.tolist()
+
+        # 40ドロの場合、ドロ40/アイテム数20 が2行続くため、1行目だけにフィルタリングする
+        previousNum = -2
+        tmp = []
+        for i in idxs_two:
+            if i - previousNum >= 2:
+                tmp.append(i)
+                previousNum = i
+        idxs_two = tmp
+
     else:
         idxs_two = df[df['ドロ数'] == '20+'].index.tolist()
     idxs_two.reverse()
