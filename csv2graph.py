@@ -850,27 +850,44 @@ def plt_table(df):
 
     # ドロップ率
 
-    #   小数点1位で統一する場合
+    # 小数点1位で統一する場合
     # rates = [f'{i/runs:>.2%}' for i in drops]
 
-    #   有効桁数3桁以上にする場合
+    # 有効桁数を3桁以上にする
+    #    4桁の時は有効桁数5 1234.5678... -> 1234.5%
+    #    n桁の時は有効桁数n+1
+    #    ただし、2桁以下の場合は有効桁数3    1.2345... -> 1.23%
     rates = []
     for i in drops:
+
+        # drop rate
         dr = i / runs * 100
-        # 4桁の時は有効桁数5 1234.5678... -> 1234.5%
-        # n桁の時は有効桁数n+1
-        # ただし、2桁以下の場合は有効桁数3    1.2345... -> 1.23%
-        # 有効数字 significant figures (s.f.)
+
+        # 整数部の桁数
         n = len(str(int(dr//1)))
-        if 3 <= n:
+
+        # 1000% 以上の場合に、改行されないよう調整
+        if n >= 4:
+            DROPS_WIDTH = DROPS_WIDTH - 0.5
+            RATES_WIDTH = RATES_WIDTH + 0.5
+
+        elif n >= 3:
+
+            # 有効数字 significant figures (s.f.)
             sf = n + 1
+
         else:
             sf = 3
+
         drstr = f'{dr:>.{sf}g}'
+
+        # % を付与
+        # 小数点第1位 (the tenths place) が0の場合、.0が省略される
         if is_integer(drstr):
-            # 小数点第1位 (the tenths place) が0の場合、.0が省略される
+
             # 明示的に.0の表示を指定
             rates.append(f'{dr:>.1f} %')
+
         else:
             rates.append(drstr + ' %')
 
