@@ -844,7 +844,13 @@ def plt_table(df):
     items_width = np.ceil(place_width / 150 * (DROPS_WIDTH + RATES_WIDTH))
     width = place_width + 150 + LEFT + RIGHT
 
-    runs = df.sum().values[1:2][0]
+    # 報酬QP(+xxxx) カラムから周回数を計算
+    try:
+        QpColName = df.filter(like='報酬QP', axis=1).columns[0]
+    except IndexError:
+        print('csvの1行目に 報酬QP が含まれていません@plt_table')
+    runs = df[QpColName].sum()
+
     items = df.sum().index[2:]
     drops = df.sum().values[2:]
 
