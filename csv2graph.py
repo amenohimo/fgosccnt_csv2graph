@@ -851,8 +851,14 @@ def plt_table(df):
         print('csvの1行目に 報酬QP が含まれていません@plt_table')
     runs = df[QpColName].sum()
 
-    items = df.sum().index[2:]
-    drops = df.sum().values[2:]
+    # アイテムカラムは、報酬QP(+xxxx) 次のカラム以降と仮定
+    # ドロップしたアイテム名を取得
+    QpColIndex = df.columns.get_loc(QpColName)
+    items = df.columns[ QpColIndex + 1 :]
+
+    # ドロップしたアイテム数を取得
+    drops = df.sum().values[ QpColIndex + 1 :]
+
 
     # ドロップ率
 
