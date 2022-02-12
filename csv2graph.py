@@ -1410,6 +1410,9 @@ def plt_parallel_coordinates(df):
         TODO html で保存するオプションを追加する
     """
     df = drop_filename(df)
+
+    # 報酬QPを削除
+    df = df.drop(columns=df.filter(like='報酬', axis=1))
     
     # 重複データを削除する
     df = df.drop_duplicates()
