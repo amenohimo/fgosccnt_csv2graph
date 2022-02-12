@@ -274,6 +274,9 @@ def make_df(csv_path, total_row=False):
 
     # print('\rDataFrame作成完了', end='')
 
+    # 獲得QP合計を削除する
+    df = df.drop(columns='獲得QP合計')
+
     return df
 
 def get_east_asian_width_count(text):
