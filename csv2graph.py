@@ -275,7 +275,10 @@ def make_df(csv_path, total_row=False):
     # print('\rDataFrame作成完了', end='')
 
     # 獲得QP合計を削除する
-    df = df.drop(columns='獲得QP合計')
+    try:
+        df = df.drop(columns='獲得QP合計')
+    except KeyError:    # 獲得QP合計のない旧仕様の場合
+        pass
 
     return df
 
