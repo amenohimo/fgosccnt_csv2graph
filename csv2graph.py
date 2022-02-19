@@ -18,6 +18,7 @@ fgosccnt.py : https://github.com/fgosc/fgosccnt
 ・画像に出力
 ・HTMLに出力
 """
+import sys
 import argparse
 import warnings
 import traceback
@@ -167,26 +168,33 @@ def make_df(csv_path, total_row=False):
     # 42-62ドロ の行を1行にまとめる
     for i, idx_three in enumerate(idxs_three):
 
-        # filename, ドロ数, (アイテム数), 報酬QP
-        df.iloc[idx_three: idx_three + 1] = df.iloc[idx_three: idx_three + 1, : QpColLoc].join(
+        try:
+            # filename, ドロ数, (アイテム数), 報酬QP
+            df.iloc[idx_three: idx_three + 1] = df.iloc[idx_three: idx_three + 1, : QpColLoc].join(
 
-            # 礼装～
-            pd.DataFrame(
-                (
+                # 礼装～
+                pd.DataFrame(
+                    (
 
-                    # 0-20 の行
-                    df.iloc[idx_three: idx_three + 1, QpColLoc: ].values +
+                        # 0-20 の行
+                        df.iloc[idx_three: idx_three + 1, QpColLoc: ].values +
 
-                    # 21-41 の行
-                    df.iloc[idx_three+1: idx_three + 2, QpColLoc: ].values +
+                        # 21-41 の行
+                        df.iloc[idx_three+1: idx_three + 2, QpColLoc: ].values +
 
-                    # 42-62 の行
-                    df.iloc[idx_three+2: idx_three + 3, QpColLoc: ].values
-                ),
-                columns = df.iloc[idx_three: idx_three + 1, QpColLoc: ].columns,
-                index = [idx_three]
+                        # 42-62 の行
+                        df.iloc[idx_three+2: idx_three + 3, QpColLoc: ].values
+                    ),
+                    columns = df.iloc[idx_three: idx_three + 1, QpColLoc: ].columns,
+                    index = [idx_three]
+                )
             )
-        )
+        except ValueError:
+            print("\n\nValueError")
+            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
+            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
+            print(df.tail())
+            sys.exit('\nExit this program...')
 
         # 20++ を正しい周回数に修正する
         if not isNewSpecifications:
@@ -195,8 +203,17 @@ def make_df(csv_path, total_row=False):
             )
 
         # 既に足した行　(次の2行)　を削除する
-        df = df.drop(idx_three + 1)
-        df = df.drop(idx_three + 2)
+        try:
+            df = df.drop(idx_three + 1)
+            df = df.drop(idx_three + 2)
+        except KeyError:
+            print("\n")
+            print("KeyError: df = df.drop(idx_three + 1)")
+            print("idx_three: ", idx_three)
+            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
+            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
+            print(df.tail())
+            sys.exit('\nExit this program...')
 
     df = df.reset_index(drop = True)
 
@@ -224,24 +241,31 @@ def make_df(csv_path, total_row=False):
     # 21-41ドロ の行を1行にまとめる
     for i, idx_two in enumerate(idxs_two):
 
-        # filename, ドロ数, 報酬QP
-        df.iloc[idx_two: idx_two + 1] = df.iloc[idx_two: idx_two + 1, : QpColLoc].join(
+        try:
+            # filename, ドロ数, 報酬QP
+            df.iloc[idx_two: idx_two + 1] = df.iloc[idx_two: idx_two + 1, : QpColLoc].join(
 
-            # 礼装～
-            pd.DataFrame(
-                (
+                # 礼装～
+                pd.DataFrame(
+                    (
 
-                    # 0-20 の行
-                    df.iloc[idx_two: idx_two + 1, QpColLoc: ].values +
+                        # 0-20 の行
+                        df.iloc[idx_two: idx_two + 1, QpColLoc: ].values +
 
-                    # 21-41 の行
-                    df.iloc[idx_two+1: idx_two + 1 + 1, QpColLoc: ].values
+                        # 21-41 の行
+                        df.iloc[idx_two+1: idx_two + 1 + 1, QpColLoc: ].values
 
-                ),
-                columns=df.iloc[idx_two: idx_two + 1, QpColLoc: ].columns,
-                index=[idx_two]
+                    ),
+                    columns=df.iloc[idx_two: idx_two + 1, QpColLoc: ].columns,
+                    index=[idx_two]
+                )
             )
-        )
+        except ValueError:
+            print("\n\nValueError")
+            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
+            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
+            print(df.tail())
+            sys.exit('\nExit this program...')
 
         # 20+ を正しい周回数に修正する
         if not isNewSpecifications:
@@ -250,7 +274,16 @@ def make_df(csv_path, total_row=False):
             )
 
         # 既に足した行　(次の行)　を削除する
-        df = df.drop(idx_two + 1)
+        try:
+            df = df.drop(idx_two + 1)
+        except KeyError:
+            print("\n")
+            print("KeyError: df = df.drop(idx_two + 1)")
+            print("idx_two: ", idx_two)
+            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
+            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
+            print(df.tail())
+            sys.exit('\nExit this program...')
 
     df = df.reset_index(drop = True)
     ###
