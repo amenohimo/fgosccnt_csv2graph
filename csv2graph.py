@@ -34,21 +34,21 @@ import unicodedata
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 import japanize_matplotlib
-
 from kaleido.scopes.plotly import PlotlyScope
 scope = PlotlyScope()
-
 import cufflinks as cf
 cf.go_offline()
 # cf.set_config_file(offline=True, theme="white", offline_show_link=False)
+from dataframe import *
 
 progname = "csv2graph"
-version = "0.0.0.20200907"
+version = "0.0.1.20220601"
 warnings.simplefilter('ignore', FutureWarning)
 pd.options.plotting.backend = "plotly"
 quest_name = ''
+data = None
 
-def make_df(csv_path, total_row=False):
+def make_df(csv_path, total_row=False, qp_sum=False):
     """
     DataFrameを作成する
     fgosccntで作成したcsvから、プロットや統計処理に使用するDataFrameを作成する
@@ -61,259 +61,10 @@ def make_df(csv_path, total_row=False):
     Returns:
         DataFrame: プロットや統計処理に使用するDataFrame
     """
-    # print('\rDataFrame作成開始', end='')
-    print('\r処理開始', end='')
+    global data
+    data = Data(csv_path, total_row=total_row, qp_sum=qp_sum)
 
-    # csvファイルの読込
-    try:
-        df = pd.read_csv(csv_path, encoding='shift-jis')
-    except UnicodeDecodeError:
-        df = pd.read_csv(csv_path, encoding='UTF-8')
-    except pd.errors.EmptyDataError:
-        # 空のファイルを指定した可能性がある
-        print(f'\rファイルが空の可能性があります:\n{csv_path}')
-        return None
-
-    # print('\rcsv読み込み完了  ', end='')
-
-    # 新しい仕様かどうか
-    # ドロ数 63, 42, 21, etc: True
-    # ドロ数 20++, 21+, 20+ : False
-    isNewSpecifications = 'アイテム数' in df.columns
-
-    # csvにクエスト名があれば利用
-    global quest_name
-    try:
-        # quest_name = df[df['ドロ数'].isnull()].values[0][0]
-        quest_name = df.values[0][0]
-    except IndexError:
-        # IndexError が出るのは、1周分のデータしかないか、重複やmissingの可能性がある
-        pass
-    except UnboundLocalError:
-        print('UnboundLocalError')
-        return None
-
-    # 文字列 報酬QP(+xxxx) を取得
-    try:
-        QpColName = df.filter(like='報酬QP', axis=1).columns[0]
-    except IndexError:
-        print('csvの1行目に 報酬QP が含まれていません')
-
-    # 合計の行を除去
-    # 報酬QP(+xxxx)の0個目の要素が1より大きければ、合計行とする
-    if not total_row and (df[QpColName][0] > 1):
-        try:
-            # df = df.drop(df[df['filename'].str.contains('合計', na=False)].index[0])
-            # df = df.drop(df[df['ドロ数'].isnull()].index[0]) # fgoscdataに対応
-            df = df.drop(index = 0)        # ドロ数の合計を出しているファイルがあることを想定
-            df = df.reset_index(drop = True)
-
-        except IndexError:
-            print('合計の行を取り除く：既に合計の行は取り除かれているか、始めから存在しません')
-
-    df = df.fillna(0)
-
-
-    # ドロ数の列 20+が出現した行以降は全てstr型になるため、str型になっている数値を数値型に変換
-    if not isNewSpecifications:
-        for i, row in enumerate(df[df.columns[1]]):
-            if not ((row == '20+') or (row == '20++') or (row == '21+')):
-                df.iloc[i, 1] = np.uint16(row)
-
-    # ドロ数より後の列は numpy.float64 として読み込まれるので numpy.uint16 にキャスト
-    for col in df.columns:
-        if type(df[col].values[0]) == np.float64:
-            df[col] = df[col].astype(np.uint16)
-
-    ###
-    ### over 20 collections start
-    ###
-    ### idxs_two  : 2枚の画像を使ったカウントにおける 最初の1枚目のindex値 の配列 21-41ドロ
-    ### idxs_three: 3枚の画像を使ったカウントにおける 最初の1枚目のindex値 の配列 42-62ドロ
-    ###
-    
-    # 報酬QP(+xxxx) の列の位置 この後の列はアイテムドロップ数であり、ドロ数によっては2-3枚の和をとる
-    QpColLoc = df.columns.get_loc(QpColName) + 1
-
-    #
-    # 42-62ドロ 
-    #
-
-    # 1枚目の行番号のリストを取得
-    if isNewSpecifications:
-        idxs_three = df.query('(42 <= ドロ数 <= 62) and (アイテム数 == 20)').index.tolist()
-
-        # 61ドロの場合、ドロ数61/アイテム数20 が2行現れるため、1行目だけにフィルタリングする
-        # |ドロ数|アイテム数|
-        # |-----|----------|
-        # |* 61 |    20    |
-        # |  61 |    21    |
-        # |  61 |    20    |
-        previousNum = -3
-        tmp = []
-        for i in idxs_three:
-            if i - previousNum >= 3:
-                tmp.append(i)
-                previousNum = i
-        idxs_three = tmp
-
-    else:
-
-        # Int64Index([  1,   7,  ..., 121, 125], dtype='int64')
-        idxs_three = df[df['ドロ数'] == '20++'].index.tolist()
-    
-    # [125, 121, ..., 7, 1]
-    idxs_three.reverse()
-
-    # 42-62ドロ の行を1行にまとめる
-    for i, idx_three in enumerate(idxs_three):
-
-        try:
-            # filename, ドロ数, (アイテム数), 報酬QP
-            df.iloc[idx_three: idx_three + 1] = df.iloc[idx_three: idx_three + 1, : QpColLoc].join(
-
-                # 礼装～
-                pd.DataFrame(
-                    (
-
-                        # 0-20 の行
-                        df.iloc[idx_three: idx_three + 1, QpColLoc: ].values +
-
-                        # 21-41 の行
-                        df.iloc[idx_three+1: idx_three + 2, QpColLoc: ].values +
-
-                        # 42-62 の行
-                        df.iloc[idx_three+2: idx_three + 3, QpColLoc: ].values
-                    ),
-                    columns = df.iloc[idx_three: idx_three + 1, QpColLoc: ].columns,
-                    index = [idx_three]
-                )
-            )
-        except ValueError:
-            print("\n\nValueError")
-            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
-            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
-            print(df.tail())
-            sys.exit('\nExit this program...')
-
-        # 20++ を正しい周回数に修正する
-        if not isNewSpecifications:
-            df.iloc[idx_three: idx_three + 1, 1: 2] = (
-                20 + 21 + int(df.iloc[idx_three + 2: idx_three + 3, 1: 2].values[0][0])
-            )
-
-        # 既に足した行　(次の2行)　を削除する
-        try:
-            df = df.drop(idx_three + 1)
-            df = df.drop(idx_three + 2)
-        except KeyError:
-            print("\n")
-            print("KeyError: df = df.drop(idx_three + 1)")
-            print("idx_three: ", idx_three)
-            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
-            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
-            print(df.tail())
-            sys.exit('\nExit this program...')
-
-    df = df.reset_index(drop = True)
-
-    #
-    # 21-41ドロ 
-    #
-
-    # 1枚目の行番号のリストを取得
-    if isNewSpecifications:
-        idxs_two = df.query('(21 <= ドロ数 <= 41) and (アイテム数 == 20)').index.tolist()
-
-        # 40ドロの場合、ドロ40/アイテム数20 が2行続くため、1行目だけにフィルタリングする
-        previousNum = -2
-        tmp = []
-        for i in idxs_two:
-            if i - previousNum >= 2:
-                tmp.append(i)
-                previousNum = i
-        idxs_two = tmp
-
-    else:
-        idxs_two = df[df['ドロ数'] == '20+'].index.tolist()
-    idxs_two.reverse()
-
-    # 21-41ドロ の行を1行にまとめる
-    for i, idx_two in enumerate(idxs_two):
-
-        try:
-            # filename, ドロ数, 報酬QP
-            df.iloc[idx_two: idx_two + 1] = df.iloc[idx_two: idx_two + 1, : QpColLoc].join(
-
-                # 礼装～
-                pd.DataFrame(
-                    (
-
-                        # 0-20 の行
-                        df.iloc[idx_two: idx_two + 1, QpColLoc: ].values +
-
-                        # 21-41 の行
-                        df.iloc[idx_two+1: idx_two + 1 + 1, QpColLoc: ].values
-
-                    ),
-                    columns=df.iloc[idx_two: idx_two + 1, QpColLoc: ].columns,
-                    index=[idx_two]
-                )
-            )
-        except ValueError:
-            print("\n\nValueError")
-            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
-            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
-            print(df.tail())
-            sys.exit('\nExit this program...')
-
-        # 20+ を正しい周回数に修正する
-        if not isNewSpecifications:
-            df.iloc[idx_two:idx_two + 1, 1: 2] = (
-                20 + int(df.iloc[idx_two + 1: idx_two + 2, 1: 2].values[0][0])
-            )
-
-        # 既に足した行　(次の行)　を削除する
-        try:
-            df = df.drop(idx_two + 1)
-        except KeyError:
-            print("\n")
-            print("KeyError: df = df.drop(idx_two + 1)")
-            print("idx_two: ", idx_two)
-            print("This issue has been confirmed to occur when missing occurs at the end of csv.")
-            print("Even if fgosccnt does not explicitly warn you that missing is occurring, it may be missing at the end.\n")
-            print(df.tail())
-            sys.exit('\nExit this program...')
-
-    df = df.reset_index(drop = True)
-    ###
-    ### over 20 collections end
-    ###
-
-    # アイテム数を削除
-    if isNewSpecifications:
-        df = df.drop(columns = 'アイテム数')
-
-    # QPが0の行を取り除く (エラー発生行)
-    try:
-        df = df.drop(df[df[df.columns[2]] == 0].index[0])
-        df = df.reset_index(drop = True)
-    except IndexError: # QP0が存在しない場合しなければ次の処理へ
-        pass
-
-    # 合計行のドロ数を0から空欄に変更
-    if total_row:
-        df.iloc[0: 1, 1: 2] = ''
-
-    # print('\rDataFrame作成完了', end='')
-
-    # 獲得QP合計を削除する
-    try:
-        df = df.drop(columns='獲得QP合計')
-    except KeyError:    # 獲得QP合計のない旧仕様の場合
-        pass
-
-    return df
+    return data.df
 
 def get_east_asian_width_count(text):
     """

@@ -2,18 +2,15 @@
     複数ページに分かれている(ドロ数20+とその次のドロ数) fgosccnt.py の出力を、
     周回数毎のデータに統合して書き出す
 """
-
 import argparse
-from pathlib import Path
-from csv2graph import make_df
 import pandas
+from dataframe import *
 
-
-VERSION = '20200906'
+VERSION = '20220604'
 PROGNAME = 'merge csv'
 BASE_DIR = Path(__file__).resolve().parent
 
-def write_csv(csv_path, total_row=True):
+def write_csv(csv_path, total_row=True, qp_sum=True):
     """
         複数ページに分かれている(ドロ数20+とその次のドロ数) fgosccnt.py の出力を、
         周回数毎のデータに統合して書き出す
@@ -27,7 +24,10 @@ def write_csv(csv_path, total_row=True):
     """
     if args.remove_total_row:
         total_row = False
-    df = make_df(csv_path, total_row=total_row)
+    try:
+        df = Data(csv_path, total_row=total_row, qp_sum=qp_sum).df
+    except:
+        print(f'csv_path: {csv_path}')
     if type(df) == pandas.core.frame.DataFrame:
         csv_path = Path(csv_path)
         if args.output_path:
@@ -47,7 +47,6 @@ def write_csv(csv_path, total_row=True):
         )
         print('\rcsv書き出し完了  ')
 
-        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='20+と2ページ目以降に分かれているCSVのデータを1周毎のデータに変換する')
     parser.add_argument('filenames', help='入力ファイル', nargs='*')
@@ -68,11 +67,9 @@ if __name__ == '__main__':
             BASE_DIR / 'test_csv_files' / 'Heaven\'s_hotel.csv',
             BASE_DIR / 'test_csv_files' / 'Silent_garden_B.csv'
         ]
-    
+
     if type(csv_paths) == list:
         for csv_path in csv_paths:
             write_csv(csv_path)
     else:
         write_csv(csv_paths)
-    
-

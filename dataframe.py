@@ -1,3 +1,5 @@
+import io
+import requests
 import pandas as pd
 import numpy as np
 import traceback
@@ -17,8 +19,6 @@ class Data:
         self.df             = self.cast(self.df)
         self.raw_df         = self.df
         self.df             = self.mergeLines(self.df)
-        self.df             = self.remove_item_number(self.df)
-        self.df             = self.remove_invailed_row(self.df)
         self.df             = self.remove_qp_sum_columns(self.df, qp_sum=qp_sum)
         
     def read_csv(self, csv_path):
@@ -52,10 +52,12 @@ class Data:
     def cast(self, df):
         df = df.fillna(0)
 
-        # ドロ数の列 20+が出現した行以降は全てstr型になるため、str型になっている数値を数値型に変換
+
+        # ドロ数の列 19+ 20+ 21+ 20++ etc が出現した行以降は全てstr型になるため、
+        # str型になっている数値を数値型に変換
         if not self.isNewSpec:
             for i, row in enumerate(df[df.columns[1]]):
-                if not ((row == '20+') or (row == '20++') or (row == '21+')):
+                if not ('+' in str(row)):
                     df.iloc[i, 1] = np.uint16(row)
 
         # ドロ数より後の列は numpy.float64 として読み込まれるので numpy.uint16 にキャスト
@@ -102,20 +104,26 @@ class Data:
         # して取得する
         if quest_name == '合計':
 
-            # 日時を取り除く (バッチファイル利用時に発生する日時)
-            match = re.search('(?<=_\d\d_\d\d_\d\d_\d\d_\d\d).*', Path(csv_path).stem) 
-            if match != None:
 
-                # クエスト場所名の文字列が空文字列になる場合は'[blank]'に置換
-                if match.group(0) == '':   
-                    quest_name = '[blank]'
+            # google drive から直にcsvを読み込んだ場合など
+            if type(csv_path) == io.BytesIO:
+                quest_name = ''
 
-                else:
-                    quest_name = match.group(0)
-
-            # csvファイル名がクエスト名と仮定してそのまま利用
             else:
-                quest_name = Path(csv_path).stem
+                # 日時を取り除く (バッチファイル利用時に発生する日時)
+                match = re.search('(?<=_\d\d_\d\d_\d\d_\d\d_\d\d).*', Path(csv_path).stem) 
+                if match != None:
+
+                    # クエスト場所名の文字列が空文字列になる場合は'[blank]'に置換
+                    if match.group(0) == '':   
+                        quest_name = '[blank]'
+
+                    else:
+                        quest_name = match.group(0)
+
+                # csvファイル名がクエスト名と仮定してそのまま利用
+                else:
+                    quest_name = Path(csv_path).stem
 
         return quest_name
 
@@ -219,7 +227,11 @@ class Data:
                             end_indexes.append(i)
                             sum = 0
             else:
-                end_indexes = df[~df['ドロ数'].str.contains('\+', na=False)].index
+
+                try:
+                    end_indexes = df[~df['ドロ数'].astype(str).str.contains('\+', na=False)].index
+                except AttributeError as e:
+                    print(e)
 
             return end_indexes
             
@@ -249,6 +261,24 @@ class Data:
 
             return recursive( row(df, start_index) , end_index )
 
+        # アイテム数を削除する
+        def remove_item_number(df):
+            return df.drop(columns='アイテム数')
+
+        # missing, duplicate, invaild などの無効な行を削除する
+        def remove_invailed_row(df):
+            try:
+
+                # 報酬QPが 0 になっている行を削る
+                df = df.drop(df[df[self.reward_QP_name] == 0].index)
+                df = df.reset_index(drop=True)
+
+            # QP0が存在しない場合はスキップする
+            except IndexError:
+                pass
+
+            return df
+
         # 変数
         sIs = get_start_indexes(df)    # 開始位置
         eIs = get_end_indexes(df)      # 終了位置
@@ -277,25 +307,9 @@ class Data:
         # index を更新する
         df = df.reset_index(drop=True)
 
-        return df
-
-    # アイテム数を削除する
-    @process_only_new_specification_data
-    def remove_item_number(self, df):
-        return df.drop(columns='アイテム数')
-    
-    # missing, duplicate, invaild などの無効な行を削除する
-    @process_only_new_specification_data
-    def remove_invailed_row(self, df):
-        try:
-
-            # 報酬QPが 0 になっている行を削る
-            df = df.drop(df[df[self.reward_QP_name] == 0].index)
-            df = df.reset_index(drop=True)
-        
-        # QP0が存在しない場合はスキップする
-        except IndexError:
-            pass
+        if self.isNewSpec:
+            df = remove_item_number(df)
+        df = remove_invailed_row(df)
 
         return df
     
