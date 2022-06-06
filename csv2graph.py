@@ -480,20 +480,6 @@ def plt_rate(df):
     plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
 
 
-# def export_img(fig, title, format='png'):
-#     """
-#         plotlyの出力結果を画像として保存する
-        
-#         保存先：　<ディレクトリのパス>/<クエスト名> - <グラフのタイトル>.png
-#     """
-#     Img_dir = Path(args.imgdir)
-#     if not Img_dir.parent.is_dir():
-#         Img_dir.parent.mkdir(parents=True)
-#     img_path = Img_dir / Path(get_quest_name() + '-' + title + ".png")
-#     with open(img_path, "wb") as f:
-#         f.write(scope.transform(fig, format=format))
-
-
 def drop_filename(df):
     """DataFrameからファイル名の列を削除する"""
     try:
@@ -501,68 +487,6 @@ def drop_filename(df):
     except KeyError:
         pass
     return df
-
-
-def get_quest_name():
-    """
-        短縮規則
-        アルファベットから始まっている場合: アルファベットと文末の単語(～級など)のみに短縮
-        (アルファベットが挟まっている場合:   アルファベットを取り除く) -> 問題があったため廃止
-        アルファベットで終わる場合:        アルファベットを取り除く
-    """
-    if quest_name != '合計':
-        return quest_name
-    else:
-        match = re.search('(?<=_\d\d_\d\d_\d\d_\d\d_\d\d).*', Path(csv_path).stem) # バッチファイル利用時
-        if match != None:
-            if match.group(0) == '':   # クエスト場所名の文字列が空文字列になる場合は置換
-                place = '[blank]'
-            else:
-                place = match.group(0)
-        else:
-            place = Path(csv_path).stem   # csvファイル名がクエスト名と仮定してそのまま利用
-        is_short = False
-        try:
-
-            # 文字列にアルファベットが含まれると、文字幅が変わるため、短縮する
-            m = re.search('[a-zA-Z]+', place)
-            if place == '[blank]':
-                pass
-            elif m != None:
-                print(place, end='')
-
-                # アルファベットから始まっている場合は、アルファベットと語末の単語のみにする
-                m = re.search('^[a-zA-Z]+', place)
-                if m != None:
-                    m = re.search('([a-zA-Z]+)(.+)(\s.+$)', place)
-                    place = m.group(1) + m.group(3)
-                    is_short = True
-                    print('アルファベットが含まれているため、クエスト名を短縮します')
-
-                # アルファベット以外から始まっている場合は、アルファベットを取り除く
-                else:
-
-                    # (アルファベットから始まる場合と)アルファベットで終わる場合
-                    m = re.search('[a-zA-Z]+$', place)
-                    if m != None:
-                        place = re.search('[^a-zA-Z]+', place).group(0)
-                        is_short = True
-                        print('アルファベットが含まれているため、クエスト名を短縮します')
-
-
-                    # アルファベットが挟まっている場合
-                    else:
-                        # m = re.search('([^a-zA-Z]+)([a-zA-Z]+)(.+$)', place)
-                        # place = m.group(1) + m.group(3)
-                        pass # VIP級など、クエストのランクがアルファベットになっている場合があったため、処理しない
-
-        except Exception as e:
-            print(traceback.format_exc())
-            print('Exception occured. place value is:', place)
-        place = re.sub('\s+', ' ', place)
-        if is_short:
-            print(' ->', place)
-        return place
 
 
 def plt_table(df):
@@ -1193,18 +1117,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CSVからグラフを作成する')
     parser.add_argument('filenames', help='入力ファイル', nargs='*')
     parser.add_argument('--version', action='version', version=progname + " " + version)
-    parser.add_argument('-w', '--web', action='store_true', help='webブラウザに出力する')
+    parser.add_argument('-w', '--web', action='store_true', help='output web browser')
     parser.add_argument('-i', '--imgdir', help='画像ファイルの出力フォルダ')
     parser.add_argument('-html', '--htmldir', help='htmlファイルの出力フォルダ')
-    parser.add_argument('-a', '--plot_all_graphs', action='store_true', help='全てのプロットを作成')
-    parser.add_argument('-t', '--table', action='store_true', help='表を作成')
+    parser.add_argument('-a', '--plot_all_graphs', action='store_true', help='plot all graphs')
+    parser.add_argument('-t', '--table', action='store_true', help='plot table')
     parser.add_argument('-d', '--drops', action='store_true', help='周回数ごとのドロップ数を作成')
     parser.add_argument('-r', '--rates', action='store_true', help='周回数ごとの素材ドロップ率を作成')
-    parser.add_argument('-v', '--violin', action='store_true', help='ヴァイオリンプロットを作成')
-    parser.add_argument('-b', '--box', action='store_true', help='ボックスプロット(箱ひげ図)を作成')
+    parser.add_argument('-v', '--violin', action='store_true', help='plot violin plot')
+    parser.add_argument('-b', '--box', action='store_true', help='plot box plot')
     parser.add_argument('--ridgeline', action='store_true', help='plot ridgeline plot')
-    parser.add_argument('-p', '--pc', action='store_true', help='平行座標を作成')
-    parser.add_argument('-e', '--event', action='store_true', help='イベントアイテムのプロットを作成')
+    parser.add_argument('-p', '--pc', action='store_true', help='plot parallel coordinates')
+    parser.add_argument('-e', '--event', action='store_true', help='plot event items')
     args = parser.parse_args()
 
     # If the output destination is not specified,
