@@ -125,7 +125,6 @@ class Data:
 
                 # csvファイル名がクエスト名と仮定してそのまま利用
                 else:
-                    print(quest_name, Path(csv_path).stem)
                     quest_name = Path(csv_path).stem
 
         return quest_name
