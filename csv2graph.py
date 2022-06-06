@@ -66,35 +66,41 @@ def make_df(csv_path, total_row=False, qp_sum=False):
 
     return data.df
 
-def get_east_asian_width_count(text):
-    """
-    与えられた文字列の幅 (pixel) を計算する
+def output_graphs(
+    fig,
+    graph_type: str
+):
+    def plot_on_web_browser(fig):
+        offline.iplot(
+            fig,
+            config={
+                "displaylogo":False,
+                "modeBarButtonsToRemove":["sendDataToCloud"] }
+        )
 
-    前提は以下の通り
-    font size : 14
-    font: meiryo ?
-    全角: 14 pixel
-    半角:  4 pixel -> 8 pixel
+    def export_img_file(fig, title, img_format='png'):
+        output_path = _create_output_path(title, args.imgdir, img_format)
+        with open(output_path, "wb") as f:
+            f.write(scope.transform(fig, format=img_format))
 
-    `unicodedata.east_asian_width` については以下を参照
-    Unicode® Standard Annex #11 EAST ASIAN WIDTH:
-    http://www.unicode.org/reports/tr11/
+    def exporpt_html(fig, graph_type):
+        output_path = _create_output_path(graph_type, args.htmldir, '.html')
+        fig.write_html(fig, output_path)
 
-    全角: F, W, A
-    半角: H, Na, N
+    def _create_output_path(graph_type, args_dir, file_suffix):
+        dir = Path(args_dir)
+        if not dir.parent.is_dir():
+                dir.parent.mkdir(parents=True)
+        return dir / Path(data.quest_name + '-' + graph_type + '.' + file_suffix)
 
-    Wikipedia:
-    https://ja.wikipedia.org/wiki/%E6%9D%B1%E3%82%A2%E3%82%B8%E3%82%A2%E3%81%AE%E6%96%87%E5%AD%97%E5%B9%85
-    """
-    pel = 0
-    for c in text:
-        if unicodedata.east_asian_width(c) in 'FWA':
-            pel += 14
-        else:
-            pel += 8 # 4
-    return pel
+    if args.web:
+        plot_on_web_browser(fig)
+    if args.imgdir != None:
+        export_img_file(fig, graph_type)
+    if args.htmldir != None:
+        exporpt_html(fig, graph_type)
 
-def get_east_asian_width_count_at(text, half, full):
+def get_east_asian_width(text, half=8, full=14):
     """
     指定された半角と全角の文字幅から、与えられた文字列の幅 (pixel) を計算する
 
@@ -625,8 +631,8 @@ def plt_table(df):
     LINE_WIDTH = 1
     HIGHT_OFFSET = 1 # 上下の枠線が消える問題
     df = drop_filename(df)
-    quest_name = get_quest_name()
-    qn_width = get_east_asian_width_count(quest_name)
+    quest_name = data.quest_name
+    qn_width = get_east_asian_width(quest_name)
     place_width = (
         qn_width + 8 * 2 + 7 if 150 < qn_width + 8 * 2 + 14 else 150
     )
@@ -1205,7 +1211,7 @@ def plt_parallel_coordinates(df):
     width = 970
     # margin_left = margin_right = max([len(col) for col in df.columns])*10/2
     # label_len = int(np.floor((width - margin_left - margin_right) / (len(df.columns) - 1) / 10)) - 1 # 軸の間隔より
-    margin_left = margin_right = max([get_east_asian_width_count_at(col, 5, 10) for col in df.columns])/2 + 4 # プロポーショナルの場合もあるので、念のため +4
+    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns])/2 + 4 # プロポーショナルの場合もあるので、念のため +4
     label_width = int(np.floor((width - margin_left - margin_right) / (len(df.columns))))
     for i in range(len(df.columns)):
         rmax = df[df.columns[i]].max()
@@ -1214,7 +1220,7 @@ def plt_parallel_coordinates(df):
         # cmax =
         l=''
         for s in df.columns[i]:
-            if label_width < get_east_asian_width_count_at(l+s, 5, 10):
+            if label_width < get_east_asian_width(l+s, 5, 10):
                 break
             l += s
         label_len = len(l)
