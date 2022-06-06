@@ -142,16 +142,7 @@ def plt_Ridgeline(df):
     fig.update_traces(orientation='h', side='positive', width=2, points=False)
     fig.update_xaxes(title_text="ドロップ数", dtick=1)
     # fig.update_layout(xaxis_showgrid=False, xaxis_zeroline=False)
-    if args.web:
-        offline.iplot(
-            fig,
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            }
-        )
-    if args.imgdir != None:
-        export_img(fig, '稜線図')
+    output_graphs(fig, '稜線図')
 
 def plt_violine(df):
     df = drop_filename(df)
@@ -201,16 +192,7 @@ def plt_violine(df):
     ymax = df.max().values.max()
     dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
     fig.update_yaxes(title_text="", dtick=dtick)
-    if args.web:
-        offline.iplot(
-            fig,
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            }
-        )
-    if args.imgdir != None:
-        export_img(fig, 'ヴァイオリンプロット')
+    output_graphs(fig, 'violinplot')
 
 def plt_box(df):
     df = drop_filename(df)
@@ -260,16 +242,7 @@ def plt_box(df):
     ymax = df.max().values.max()
     dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
     fig.update_yaxes(title_text="", dtick=dtick)
-    if args.web:
-        offline.iplot(
-            fig,
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            }
-        )
-    if args.imgdir != None:
-        export_img(fig, '箱ひげ図')
+    output_graphs(fig, 'box plot')
 
 def plt_all(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
     
@@ -479,16 +452,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
         margin=dict(l=left, t=TOP, b=BOTTOM, r=right, pad=0, autoexpand=False)
     )
-    if args.web:
-        offline.iplot(
-            fig,
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            }
-        )
-    if args.imgdir != None:
-        export_img(fig, title)
+    output_graphs(fig, title)
 
 def plt_rate(df):
     """
@@ -518,18 +482,18 @@ def plt_rate(df):
     plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率', rate=True)
     plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
 
-def export_img(fig, title, format='png'):
-    """
-        plotlyの出力結果を画像として保存する
+# def export_img(fig, title, format='png'):
+#     """
+#         plotlyの出力結果を画像として保存する
         
-        保存先：　<ディレクトリのパス>/<クエスト名> - <グラフのタイトル>.png
-    """
-    Img_dir = Path(args.imgdir)
-    if not Img_dir.parent.is_dir():
-        Img_dir.parent.mkdir(parents=True)
-    img_path = Img_dir / Path(get_quest_name() + '-' + title + ".png")
-    with open(img_path, "wb") as f:
-        f.write(scope.transform(fig, format=format))
+#         保存先：　<ディレクトリのパス>/<クエスト名> - <グラフのタイトル>.png
+#     """
+#     Img_dir = Path(args.imgdir)
+#     if not Img_dir.parent.is_dir():
+#         Img_dir.parent.mkdir(parents=True)
+#     img_path = Img_dir / Path(get_quest_name() + '-' + title + ".png")
+#     with open(img_path, "wb") as f:
+#         f.write(scope.transform(fig, format=format))
 
 def drop_filename(df):
     """DataFrameからファイル名の列を削除する"""
@@ -757,25 +721,14 @@ def plt_table(df):
             autoexpand=False
         )
     )
-    if args.web:
-        offline.iplot(
-            fig,
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            }
-        )
-    if args.imgdir != None:
-        export_img(fig, 'table')
-    if args.htmldir != None:
-        exporpt_html(fig, 'table')       
+    output_graphs(fig, 'table')
 
-def exporpt_html(fig, title):
-    html_dir = Path(args.htmldir)
-    if not html_dir.parent.is_dir():
-        html_dir.parent.mkdir(parents=True)
-    html_path = html_dir / Path(get_quest_name() + '-' + title + ".html")
-    fig.write_html(fig, html_path)
+# def exporpt_html(fig, title):
+#     html_dir = Path(args.htmldir)
+#     if not html_dir.parent.is_dir():
+#         html_dir.parent.mkdir(parents=True)
+#     html_path = html_dir / Path(get_quest_name() + '-' + title + ".html")
+#     fig.write_html(fig, html_path)
 
 
 def is_integer(n):
@@ -972,16 +925,7 @@ def plt_event_line(df):
             margin=dict(l=70, t=65, b=55, r=120, pad=0, autoexpand=False),
             paper_bgcolor='white' # 'white' "LightSteelBlue"
         )
-        if args.web:
-            offline.iplot(
-                fig,
-                config={
-                    "displaylogo":False,
-                    "modeBarButtonsToRemove":["sendDataToCloud"]
-                }
-            )
-        if args.imgdir != None:
-            export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
+        output_graphs(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
     # 1種類の場合は、1つグラフを表示
     else:
@@ -1026,16 +970,7 @@ def plt_event_line(df):
             margin=dict(l=70, t=50, b=55, r=38, pad=0, autoexpand=False),
             paper_bgcolor='white'
         )
-        if args.web:
-            offline.iplot(
-                fig,
-                config={
-                    "displaylogo":False,
-                    "modeBarButtonsToRemove":["sendDataToCloud"]
-                }
-            )
-        if args.imgdir != None:
-            export_img(fig, 'ボーナス毎のイベントアイテムのドロップ数')
+        output_graphs(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
 def plt_line_matplot(df):
     """
@@ -1138,16 +1073,7 @@ def plt_sunburst(df):
     fig.update_layout(
         height=600, width=1000, title={'text':"イベントアイテムの割合",'x':0.5,'xanchor': 'center'},
         font=dict(size=12), template=template, legend = dict(x = 1.005, y = 1))
-    if args.web:
-        offline.iplot(
-            fig,
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            }
-        )
-    if args.imgdir != None:
-        export_img(fig, 'イベントアイテムの割合')
+    output_graphs(fig, 'イベントアイテムの割合')
 
 def plt_simple_parallel_coordinates(df):
     """
@@ -1167,19 +1093,7 @@ def plt_simple_parallel_coordinates(df):
         color_continuous_scale=px.colors.diverging.Portland,
         height=800, width=1300
     )
-    # offline.plot(fig, filename = 'parallel_coordinates.html', config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]}, auto_open=True)
-    if args.web:
-        offline.plot(
-            fig,
-            filename = 'simple_parallel_coordinates.html',
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            },
-            auto_open=True
-        )
-    if args.imgdir != None:
-        export_img(fig, 'simple_parallel_coordinates')
+    output_graphs(fig, 'simple_parallel_coordinates')
 
 def plt_parallel_coordinates(df):
     """
@@ -1246,19 +1160,7 @@ def plt_parallel_coordinates(df):
         paper_bgcolor='white'#, #'black' # "LightSteelBlue" # 視認性はデータの把握に重要なのでいい設定を探す
         # plot_bgcolor='gold' # 'rgba(0,0,0,0)'
     )
-    # offline.plot(fig, config={"displaylogo":False, "modeBarButtonsToRemove":["sendDataToCloud"]})
-    if args.web:
-        offline.plot(
-            fig,
-            filename = 'parallel_coordinates.html',
-            config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"]
-            },
-            auto_open=True
-        )
-    if args.imgdir != None:
-        export_img(fig, 'parallel_coordinates')
+    output_graphs(fig, 'parallel_coordinates')
 
 def plts(df):
     # print('\rグラフの描画開始', end='')
