@@ -19,8 +19,9 @@ class Data:
         self.df             = self.cast(self.df)
         self.raw_df         = self.df
         self.df             = self.mergeLines(self.df)
+        self.df             = self.calc_qp_sum_columns(self.df, qp_sum=qp_sum)
         self.df             = self.remove_qp_sum_columns(self.df, qp_sum=qp_sum)
-        
+
     def read_csv(self, csv_path):
         try:
             df = pd.read_csv(csv_path, encoding='shift-jis')
@@ -314,9 +315,42 @@ class Data:
         return df
     
     # TODO: ボーナスの影響を排除した獲得QP合計を計算して、獲得QP合計カラムに上書きする
-    def calc_qp_sum_columns(self):
-        pass
-    
+    def calc_qp_sum_columns(self, df, qp_sum=False):
+
+        if qp_sum == True:
+            rew_qp = int(re.search(r'\d+', self.reward_QP_name).group())  # 報酬QPの値
+            qp_cols = df.filter(regex='^QP')          # ドロップQPのカラム
+            qp_col_names = qp_cols.columns            # ドロップQPのカラム名リスト
+            n = len(qp_col_names)                     # ドロップQPのカラム数
+
+            # 万, k などを数値に変換
+            def change_value(line):
+                line = re.sub("百万", '000000',  str(line))
+                line = re.sub("万",   '0000',  str(line))
+                line = re.sub("千",   '000',  str(line))
+                line = re.sub("M",    '000000',  str(line))
+                line = re.sub("K",    '000',  str(line))
+                return line
+
+            # i番目のQPカラムにおける QPドロップ値 の series を取得
+            def get_drop_qp_values(i):
+                qp_value = int( re.search(r'\d+', change_value( qp_col_names[i]) ).group() )
+                qp_drops = qp_cols[ qp_col_names[i] ]
+                return qp_value * qp_drops
+
+            # 獲得QP合計を計算する
+            res = rew_qp
+            for i in range(n):
+                res += get_drop_qp_values(i)
+
+            # 獲得QP合計を書込む
+            if '獲得QP合計' in df.columns:
+                df['獲得QP合計'] = res
+            else:
+                df.insert(loc=self.dro_col_loc + 1, column='獲得QP合計', value=res)
+
+        return df
+
     # 獲得QP合計 を削除する
     #   qp_sum True : 残す
     #   qp_sum False: 削除する
