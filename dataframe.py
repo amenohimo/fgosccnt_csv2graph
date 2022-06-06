@@ -53,7 +53,6 @@ class Data:
     def cast(self, df):
         df = df.fillna(0)
 
-
         # ドロ数の列 19+ 20+ 21+ 20++ etc が出現した行以降は全てstr型になるため、
         # str型になっている数値を数値型に変換
         if not self.isNewSpec:
@@ -104,7 +103,6 @@ class Data:
         # csvにクエスト名が記述されていない場合は、csvのファイル名をクエスト名と
         # して取得する
         if quest_name == '合計':
-
 
             # google drive から直にcsvを読み込んだ場合など
             if type(csv_path) == io.BytesIO:
@@ -228,7 +226,6 @@ class Data:
                             end_indexes.append(i)
                             sum = 0
             else:
-
                 try:
                     end_indexes = df[~df['ドロ数'].astype(str).str.contains('\+', na=False)].index
                 except AttributeError as e:
