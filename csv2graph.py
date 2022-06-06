@@ -608,13 +608,7 @@ def plt_table(df):
     width = place_width + 150 + MARGIN_LEFT + MARGIN_RIGHT
 
     df = drop_filename(df)
-
-    # # # 報酬QP(+xxxx) カラムから周回数を計算
-    # try:
-    #     QpColName = df.filter(like='報酬QP', axis=1).columns[0]
-    # except IndexError:
-    #     print('csvの1行目に 報酬QP が含まれていません@plt_table')
-    # runs = df[QpColName].sum()
+    
     runs = report_data.run
 
     # アイテムカラムは、報酬QP(+xxxx) 次のカラム以降と仮定
