@@ -24,47 +24,52 @@ import warnings
 import traceback
 import re
 from pathlib import Path
+import unicodedata
+
 import numpy as np
 import pandas as pd
 import plotly.offline as offline
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import unicodedata
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 import japanize_matplotlib
-from kaleido.scopes.plotly import PlotlyScope
-scope = PlotlyScope()
-import cufflinks as cf
-cf.go_offline()
-# cf.set_config_file(offline=True, theme="white", offline_show_link=False)
+from kaleido.scopes.plotly import PlotlyScope; scope = PlotlyScope()
+import cufflinks as cf; cf.go_offline()
+
 from dataframe import *
 
 progname = "csv2graph"
-version = "0.0.1.20220601"
+version = "0.0.1.20220606.2"
+
 warnings.simplefilter('ignore', FutureWarning)
+
 pd.options.plotting.backend = "plotly"
+
 quest_name = ''
-data = None
+report_data = None
+
 
 def make_df(csv_path, total_row=False, qp_sum=False):
     """
-    DataFrameを作成する
-    fgosccntで作成したcsvから、プロットや統計処理に使用するDataFrameを作成する
+    fgosccntで作成したcsvからDataFrameを作成する
 
     Args:
         csv_path (str): fgosccntで作成したcsvファイルのパス
         total_row (bool): 合計の行を残すか否か
-                      グラフの処理では邪魔になるので残さない
+                      グラフの処理では残さない
 
     Returns:
-        DataFrame: プロットや統計処理に使用するDataFrame
+        DataFrame
     """
-    global data
-    data = Data(csv_path, total_row=total_row, qp_sum=qp_sum)
+    global report_data
+    global quest_name
 
-    return data.df
+    report_data = Data(csv_path, total_row=total_row, qp_sum=qp_sum)
+    quest_name = report_data.quest_name
+    return report_data.df
+
 
 def output_graphs(
     fig,
@@ -91,7 +96,7 @@ def output_graphs(
         dir = Path(args_dir)
         if not dir.parent.is_dir():
                 dir.parent.mkdir(parents=True)
-        return dir / Path(data.quest_name + '-' + graph_type + '.' + file_suffix)
+        return dir / Path(quest_name + '-' + graph_type + '.' + file_suffix)
 
     if args.web:
         plot_on_web_browser(fig)
@@ -99,6 +104,7 @@ def output_graphs(
         export_img_file(fig, graph_type)
     if args.htmldir != None:
         exporpt_html(fig, graph_type)
+
 
 def get_east_asian_width(text, half=8, full=14):
     """
@@ -128,11 +134,8 @@ def get_east_asian_width(text, half=8, full=14):
             pel += half
     return pel
 
-def is_evernt(df):
-    """イベントアイテムを含むか"""
-    return len(df.columns[df.columns.str.contains('\(x')]) != 0
 
-def plt_Ridgeline(df):
+def plt_ridgeline(df):
     df = drop_filename(df)
     fig = go.Figure()
     data = [go.Violin(x=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True) 
@@ -144,114 +147,103 @@ def plt_Ridgeline(df):
     # fig.update_layout(xaxis_showgrid=False, xaxis_zeroline=False)
     output_graphs(fig, '稜線図')
 
-def plt_violine(df):
+
+def plt_not_ordered_graphs(df):
+    """plot iolin plot or box plot"""
+    FONT_SIZE = 15
+    AXIS_FONT_SIZE = 13
+    TEXT_Y_OFFSET = 1
+    TITLE_X = 0.5
+    MARGIN_TOP = 50
+    MARGIN_BOTTOM = 64
+    MARGIN_RIGHT = 40
+    MARGIN_LEFT = 76
+    MARGIN_PAD = 0
+    AXES_HEIGHT = 600
+
+    fig_height = MARGIN_TOP + AXES_HEIGHT + MARGIN_BOTTOM
+    fig_width =  100 * len(df.columns) # 70 * len(df.columns)
+    Text_size_2_text_heiht = {15: 13, 16: 15, 17: 15, 18: 15}
+    if FONT_SIZE < 15:
+        text_height = 13 # 未検証
+    elif 15 <= FONT_SIZE <= 18:
+        text_height = Text_size_2_text_heiht[FONT_SIZE]
+    elif 18 < FONT_SIZE:
+        text_height = 15 # 未検証
+    title_y = ( MARGIN_BOTTOM + AXES_HEIGHT + ( MARGIN_TOP + text_height) / 2 - TEXT_Y_OFFSET ) / fig_height
     df = drop_filename(df)
-    template = "seaborn"
-    fig = go.Figure()
+    ymax = df.max().values.max()
+    dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
+
+    layout = dict(
+        title={
+            'text':quest_name,
+            'x':TITLE_X,
+            'y':title_y,
+            'xanchor': 'center',
+            'font':dict(size=FONT_SIZE)},
+        height=fig_height,
+        width=fig_width,
+        margin=dict(l=MARGIN_LEFT, t=MARGIN_TOP, b=MARGIN_BOTTOM, r=MARGIN_RIGHT, pad=MARGIN_PAD, autoexpand=False),
+        template="seaborn",
+        paper_bgcolor='#FFFFFF', # "#aaf",EAEAF2,DBE3E6,#FFFFFF (白)
+        xaxis=dict(
+            title_text='obtained items',
+            title_font=dict(size=AXIS_FONT_SIZE)
+        ),
+        yaxis=dict(
+            title_text='number of items obtained',
+            title_font=dict(size=AXIS_FONT_SIZE),
+            # range=[-0.5, df.max().max()]
+            # range=[-1.5, 30],
+            # dtick=1,
+            dtick=dtick
+        )
+    )
+
+    if args.violin:
+        plot_data = _get_violine_data(df)
+        fig = go.Figure(data=plot_data, layout=layout)
+        output_graphs(fig, 'violin_plot')
+
+    if args.box:
+        plot_data = _get_box_data(df)
+        fig = go.Figure(data=plot_data, layout=layout)
+        output_graphs(fig, 'box_plot')
+
+
+def _get_violine_data(df):
+    df = drop_filename(df)
     data = [
         go.Violin(
-            y=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True
-        ) for col in df.columns
-    ]
-    TEXT_SIZE = 15
-    SIZE_TO_TEXT_HEIGHT = {15: 13, 16: 15, 17: 15, 18: 15} # 実測値 TEXT_SIZE: px 
-    if 15 <= TEXT_SIZE <= 18:
-        TEXT_HEIGHT = SIZE_TO_TEXT_HEIGHT[TEXT_SIZE]
-    elif TEXT_SIZE < 15:
-        TEXT_HEIGHT = 13 # 実測値未測定
-    elif 18 < TEXT_SIZE:
-        TEXT_HEIGHT = 15 # 実測値未測定
-    TOP = 50
-    BOTTOM = 64
-    AX_HEIGHT = 600
-    FIG_HEIGHT = TOP + AX_HEIGHT + BOTTOM
-    FIG_WIDTH = 70 * len(df.columns)
-    OFFSET = 1
-    # タイトルのy座標は、ボトム + 図の高さ + トップの半分の高さ + 文字の半分の高さ と 補正値
-    # 割合で指定するため、FIG_HEIGHTで割る必要がある
-    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFFSET ) / FIG_HEIGHT
-    layout = dict(
-        # updatemenus=updatemenus,
-        title={
-            'text':get_quest_name(),
-            'x':0.5,
-            'y':y, #0.955,
-            'xanchor': 'center',
-            'font':dict(size=TEXT_SIZE)
-        },
-        # yaxis=dict(range=[-0.5, df.max().max()]),
-        height=FIG_HEIGHT, width=100*len(df.columns),
-        margin=dict(l=40, t=TOP, b=BOTTOM, r=40, pad=0, autoexpand=False),
-        template=template,
-        yaxis=dict(
-            # range=[-1.5, 30],
-            dtick=1
-        ),
-    )
-    fig = go.Figure(data=data, layout=layout)
-    ymax = df.max().values.max()
-    dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
-    fig.update_yaxes(title_text="", dtick=dtick)
-    output_graphs(fig, 'violinplot')
+            y=df[col],
+            name=col,
+            showlegend=False,
+            box_visible=True,
+            meanline_visible=True
+        ) for col in df.columns]
+    return data
 
-def plt_box(df):
+
+def _get_box_data(df):
     df = drop_filename(df)
-    template = "seaborn"
-    fig = go.Figure()
-    data = [go.Box(y=df[col], name=col, showlegend=False)
-            for col in df.columns]
-    TEXT_SIZE = 15
-    SIZE_TO_TEXT_HEIGHT = {15: 13, 16: 15, 17: 15, 18: 15} # 実測値 TEXT_SIZE: px 
-    if 15 <= TEXT_SIZE <= 18:
-        TEXT_HEIGHT = SIZE_TO_TEXT_HEIGHT[TEXT_SIZE]
-    elif TEXT_SIZE < 15:
-        TEXT_HEIGHT = 13 # 実測値未測定
-    elif 18 < TEXT_SIZE:
-        TEXT_HEIGHT = 15 # 実測値未測定
-    TOP = 50
-    BOTTOM = 64
-    AX_HEIGHT = 600
-    FIG_HEIGHT = TOP + AX_HEIGHT + BOTTOM
-    FIG_WIDTH = 70 * len(df.columns)
-    OFFSET = 1
-    # タイトルのy座標は、ボトム + 図の高さ + トップの半分の高さ + 文字の半分の高さ と 補正値
-    # 割合で指定するため、FIG_HEIGHTで割る必要がある
-    y = ( BOTTOM + AX_HEIGHT + ( TOP + TEXT_HEIGHT) / 2 - OFFSET ) / FIG_HEIGHT
-    layout = dict(
-        # updatemenus=updatemenus,
-        title={
-            'text':get_quest_name(),
-            'x':0.5,
-            'y':y, #0.955,
-            'xanchor': 'center',
-            'font':dict(size=TEXT_SIZE)
-        },
-        height=FIG_HEIGHT, width=FIG_WIDTH, 
-        margin=dict(
-            l=40,
-            t=TOP,
-            b=BOTTOM,
-            r=40,
-            pad=0,
-            autoexpand=False
-        ),
-        paper_bgcolor='#FFFFFF',# "#aaf",EAEAF2,DBE3E6,#FFFFFF (白)
-        template=template
-    )
-    fig = go.Figure(data=data, layout=layout)
-    ymax = df.max().values.max()
-    dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
-    fig.update_yaxes(title_text="", dtick=dtick)
-    output_graphs(fig, 'box plot')
+    data = [
+        go.Box(
+            y=df[col],
+            name=col,
+            showlegend=False
+        ) for col in df.columns]
+    return data
+
 
 def plt_all(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
     
-    TOP = 65
-    BOTTOM = 55
-    left = 70
-    right = 38
-    axs = 100   # 図の1つあたりの縦幅 [pixel]
-    vs_px = 72  # サブプロット間の間隔 [pixel]
+    MARGIN_TOP = 65
+    MARGIN_BOTTOM = 55
+    MARGIN_LEFT = 70
+    MARGIN_RIGHT = 38
+    height_of_sub_figure = 100
+    vertical_spacing = 72  # サブプロット間の間隔 [pixel]
     template = "seaborn"
     if rate:
         fill = 'tozerox' #  ['none', 'tozeroy', 'tozerox', 'tonexty', 'tonextx','toself', 'tonext']
@@ -265,32 +257,30 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
     df = drop_filename(df)
     
     total_runs = df.index.max() + 1
-    cols = 2
+    number_of_cols = 2
+    r = int(len(df.columns)/number_of_cols)
+    number_of_rows = r if len(df.columns) %2 == 0 else r + 1
+    fig_height = height_of_sub_figure * number_of_rows +\
+        MARGIN_TOP + vertical_spacing * (number_of_rows - 1) + MARGIN_BOTTOM
 
-    # グラフの行数
-    rows = int(len(df.columns)/cols) if len(df.columns) %2 == 0 else int(len(df.columns)/cols + 1)
-
-    # figure全体の高さは、図の高さ*個数 + 余白の高さの和
-    fig_height = axs * rows + vs_px * (rows - 1) + TOP + BOTTOM
-
-    # 図の間の間隔
-    # plotlyではvertical spacingは割合でしか指定できない
-    vs = vs_px / (fig_height - TOP - BOTTOM)
+    # In plotly, vertical spacing can only be specified as a percentage,
+    # so calculate the percentage.
+    vertical_spacing = vertical_spacing / (fig_height - MARGIN_TOP - MARGIN_BOTTOM)
 
     fig = make_subplots(
-        rows=rows,
-        cols=cols,
-        vertical_spacing=vs,
+        rows=number_of_rows,
+        cols=number_of_cols,
+        vertical_spacing=vertical_spacing,
         subplot_titles=df.columns
     )
 
     for i, col in enumerate(df.columns):
-
         y = df[col]
-        ymean = y[len(y)-1]
-
-        # 300%以上の素材、100%以上の種火は%表記にしない
+        ymean = y[len(y)-1]        
         is_exp = re.search('種火|灯火|猛火|業火', col) != None
+
+        # %表記にしないアイテム
+        # Over 300%
         if 300 <= ymean:
             df[col] /= 100
             y = df[col]
@@ -298,6 +288,8 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             if rate:
                 ytext = '平均ドロ数'
             tix = ''
+
+        # 100% over Ember, Light, Fire, Blaze
         elif (100 <= ymean) & is_exp:
             df[col] /= 100
             y = df[col]
@@ -305,6 +297,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             if rate:
                 ytext = '平均ドロ数'
             tix = ''
+
         else:
             if rate:
                 ytext = 'ドロ率'
@@ -327,8 +320,8 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             ymin = _ymin - yrange * 0.05  # 0%の時線が見えなくなるので 範囲 * 5% 下げる
             ymax = _ymax + yrange * 0.05  # minだけ調整すると上にずれるので 範囲 * +5% 上げる
 
+        # 周回数が多い場合、サイズが大きいとそれぞれの点や線が重なり合って潰れてしまうため、
         # 線と点の大きさを、周回数によって変化させる
-        # 周回数が多い場合、サイズが大きいとそれぞれの点や線が重なり合って潰れてしまう
         if total_runs < 70:
             marker_size = 6
             line_width = 2
@@ -339,7 +332,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         # 200周以上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
         else: 
 
-            # ドロ率はfillと点で頑張る
+            # ドロ率はfillと点にする
             if rate: 
                 marker_size = 1
                 line_width = 0
@@ -356,16 +349,19 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
                 name=col,
                 fill=fill,
 
-                # 凡例は、現在のplotlyの仕様だと一カ所にまとめて表示しかできない
+                # 凡例は、作成時現在のplotlyの仕様だと一カ所にまとめて表示しかできない
                 # 離れると分かりにくいため、図の上にそれぞれ素材名を表示して代用する
-                # 手動で線や文字をお絵かきすれば、凡例擬きを自作することはおそらく可能
+                # 手動で線や文字を描画することで、凡例を自作することも可能と思われる
                 showlegend=False,
 
                 opacity=0.9,
                 marker_size=marker_size,
                 line_width=line_width
             ),
-            row=int(i/2)+1, col=i%2+1 # グラフの位置
+
+            # グラフの位置
+            row=int(i/2)+1,
+            col=i%2+1
         )
 
         fig.update_yaxes(
@@ -450,9 +446,10 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
 
         title={'text':title,'x':0.5,'y':0.985,'xanchor': 'center', 'font':dict(size=15)},
         font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
-        margin=dict(l=left, t=TOP, b=BOTTOM, r=right, pad=0, autoexpand=False)
+        margin=dict(l=MARGIN_LEFT, t=MARGIN_TOP, b=MARGIN_BOTTOM, r=MARGIN_RIGHT, pad=0, autoexpand=False)
     )
     output_graphs(fig, title)
+
 
 def plt_rate(df):
     """
@@ -482,6 +479,7 @@ def plt_rate(df):
     plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率', rate=True)
     plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
 
+
 # def export_img(fig, title, format='png'):
 #     """
 #         plotlyの出力結果を画像として保存する
@@ -495,6 +493,7 @@ def plt_rate(df):
 #     with open(img_path, "wb") as f:
 #         f.write(scope.transform(fig, format=format))
 
+
 def drop_filename(df):
     """DataFrameからファイル名の列を削除する"""
     try:
@@ -502,6 +501,7 @@ def drop_filename(df):
     except KeyError:
         pass
     return df
+
 
 def get_quest_name():
     """
@@ -564,6 +564,7 @@ def get_quest_name():
             print(' ->', place)
         return place
 
+
 def plt_table(df):
     """
         ドロップ数とドロップ率のテーブルを表示する
@@ -575,45 +576,50 @@ def plt_table(df):
           - TODO　指定できるようにする
 
         表の幅は自動で調整する
-          - プロポーショナルフォントには対応していない > TODO
-          - Ｍなどの横幅の広いアルファベットが多いと改行が発生する
-          - とりあえず短くしてみる
-
-                `HIMEJIサバイバルカジノ ビギナー級` →　`HIMEJI ビギナー級`
+            既知の問題
+            - プロポーショナルフォントには対応していない
+            - Ｍなどの横幅の広いアルファベットが多いと改行が発生する
+                -> 短くして対処
+                    `HIMEJIサバイバルカジノ ビギナー級` →　`HIMEJI ビギナー級`
 
         表示上のアイテム名列の幅 (実測値): 左右8pxずつ + 文字列の幅
         実際にぴったりの幅を指定すると、改行されレイアウトが崩れるため、更に7px余裕を持たせる
 
         デフォルトの列幅の比率は、15:6:9
-            
     """
-    TOP = 30
-    BOTTOM = 30
-    LEFT = 40
-    RIGHT = 40
+    MARGIN_TOP = 30
+    MARGIN_BOTTOM = 30
+    MARGIN_LEFT = 40
+    MARGIN_RIGHT = 40
+    MARGIN_PAD = 0
     CELL_HEIGHT = 26
     LINE_WIDTH = 1
-    HIGHT_OFFSET = 1 # 上下の枠線が消える問題
-    df = drop_filename(df)
-    quest_name = data.quest_name
-    qn_width = get_east_asian_width(quest_name)
-    place_width = (
-        qn_width + 8 * 2 + 7 if 150 < qn_width + 8 * 2 + 14 else 150
-    )
+    HIGHT_OFFSET = 1 # 上下の枠線が消える問題のため調整を行う
+    quest_name_width = get_east_asian_width(quest_name)
+    # place_width = (
+    #     quest_name_width + 8 * 2 + 7 if 150 < quest_name_width + 8 * 2 + 14 else 150
+    # )
+    if  150 < quest_name_width + 8 * 2 + 14:
+        place_width = quest_name_width + 8 * 2 + 7
+    else:
+        place_width = 150
     DROPS_WIDTH, RATES_WIDTH = 6, 9
     items_width = np.ceil(place_width / 150 * (DROPS_WIDTH + RATES_WIDTH))
-    width = place_width + 150 + LEFT + RIGHT
+    width = place_width + 150 + MARGIN_LEFT + MARGIN_RIGHT
 
-    # 報酬QP(+xxxx) カラムから周回数を計算
-    try:
-        QpColName = df.filter(like='報酬QP', axis=1).columns[0]
-    except IndexError:
-        print('csvの1行目に 報酬QP が含まれていません@plt_table')
-    runs = df[QpColName].sum()
+    df = drop_filename(df)
+
+    # # # 報酬QP(+xxxx) カラムから周回数を計算
+    # try:
+    #     QpColName = df.filter(like='報酬QP', axis=1).columns[0]
+    # except IndexError:
+    #     print('csvの1行目に 報酬QP が含まれていません@plt_table')
+    # runs = df[QpColName].sum()
+    runs = report_data.run
 
     # アイテムカラムは、報酬QP(+xxxx) 次のカラム以降と仮定
     # ドロップしたアイテム名を取得
-    QpColIndex = df.columns.get_loc(QpColName)
+    QpColIndex = df.columns.get_loc(report_data.reward_QP_name)
     items = df.columns[ QpColIndex + 1 :]
 
     # ドロップしたアイテム数を取得
@@ -702,22 +708,17 @@ def plt_table(df):
         # LINE_WIDTH は現時点で1or2以外の場合を考慮していない
         # 線幅を考える時に考える
         # HIGHT_OFFSETを設定しないと下の枠線が消える
-        height=CELL_HEIGHT * len(df.columns[1:]) + TOP + BOTTOM + LINE_WIDTH + HIGHT_OFFSET,
+        height=CELL_HEIGHT * len(df.columns[1:]) + MARGIN_TOP + MARGIN_BOTTOM + LINE_WIDTH + HIGHT_OFFSET,
         width=width,
         font=dict(size=14),
         # 背景色を変えてfigの範囲を確認する場合や、単に背景色を変えたい時に変更
         paper_bgcolor='white', # white', '#FFFFFF', "#aaf", '#EAEAF2', '#DBE3E6'
         margin=dict(
-            # l=1,
-            # r=1,
-            # b=0,
-            # t=1,
-            # pad=0,
-            l=LEFT,
-            r=RIGHT,
-            b=BOTTOM,
-            t=TOP,
-            pad=0,
+            l=MARGIN_LEFT,
+            r=MARGIN_RIGHT,
+            b=MARGIN_BOTTOM,
+            t=MARGIN_TOP,
+            pad=MARGIN_PAD,
             autoexpand=False
         )
     )
@@ -743,6 +744,7 @@ def is_integer(n):
         return False
     else:
         return float(n).is_integer()
+
 
 def plt_event_line(df):
     """
@@ -972,6 +974,7 @@ def plt_event_line(df):
         )
         output_graphs(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
+
 def plt_line_matplot(df):
     """
         概念礼装ボーナス毎のイベントアイテム獲得量をラインプロットで描く
@@ -1052,6 +1055,7 @@ def plt_line_matplot(df):
     plt.subplots_adjust(left=0.05, right=0.91, bottom=0.1, top=0.95)
     plt.show()
 
+
 def plt_sunburst(df):
     """
         イベントアイテムの円グラフを描く
@@ -1075,6 +1079,7 @@ def plt_sunburst(df):
         font=dict(size=12), template=template, legend = dict(x = 1.005, y = 1))
     output_graphs(fig, 'イベントアイテムの割合')
 
+
 def plt_simple_parallel_coordinates(df):
     """
         平行座標を描く
@@ -1094,6 +1099,7 @@ def plt_simple_parallel_coordinates(df):
         height=800, width=1300
     )
     output_graphs(fig, 'simple_parallel_coordinates')
+
 
 def plt_parallel_coordinates(df):
     """
@@ -1162,82 +1168,86 @@ def plt_parallel_coordinates(df):
     )
     output_graphs(fig, 'parallel_coordinates')
 
-def plts(df):
-    # print('\rグラフの描画開始', end='')
-    if args.table or args.all:
+
+def plot_graphs(df):
+
+    def _is_evernt(df):
+        """イベントアイテムを含むか"""
+        return len(df.columns[df.columns.str.contains('\(x')]) != 0
+
+    if args.table:
         plt_table(df)
-    if args.pc or args.all:
+    if args.pc:
         plt_parallel_coordinates(df)
-    # # plt_line_matplot(df)
-    if args.event or args.all:
-        if is_evernt(df): # イベントアイテム
+    if args.event:
+        if _is_evernt(df):
             plt_event_line(df) 
             plt_sunburst(df)
-        else:
-            print('イベントアイテムを確認できませんでした')
-    if args.box or args.all:
-        plt_box(df)
-    if args.violine or args.all:
-        plt_violine(df)
-    if args.drop or args.all:
+            # plt_line_matplot(df)
+    if args.box or args.violin:
+        plt_not_ordered_graphs(df)
+    if args.ridgeline:
+        plt_ridgeline(df)
+    if args.drops:
         plt_all(df)
-    if args.rate or args.all:
+    if args.rates:
         plt_rate(df)
-    # plt_Ridgeline(df)
-    # print('\rグラフの描画完了', end='')
+
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='CSVからグラフを作成する')
     parser.add_argument('filenames', help='入力ファイル', nargs='*')
     parser.add_argument('--version', action='version', version=progname + " " + version)
     parser.add_argument('-w', '--web', action='store_true', help='webブラウザに出力する')
     parser.add_argument('-i', '--imgdir', help='画像ファイルの出力フォルダ')
-    parser.add_argument('-html', '--htmldir', help='画像ファイルの出力フォルダ')
-    parser.add_argument('-a', '--all', action='store_true', help='全てのプロットを作成')
-    parser.add_argument('-v', '--violine', action='store_true', help='ヴァイオリンプロットを作成')
-    parser.add_argument('-b', '--box', action='store_true', help='ボックスプロット(箱ひげ図)を作成')
-    parser.add_argument('-p', '--pc', action='store_true', help='平行座標を作成')
+    parser.add_argument('-html', '--htmldir', help='htmlファイルの出力フォルダ')
+    parser.add_argument('-a', '--plot_all_graphs', action='store_true', help='全てのプロットを作成')
     parser.add_argument('-t', '--table', action='store_true', help='表を作成')
-    parser.add_argument('-d', '--drop', action='store_true', help='周回数ごとのドロップ数を作成')
-    parser.add_argument('-r', '--rate', action='store_true', help='周回数ごとの素材ドロップ率を作成')
+    parser.add_argument('-d', '--drops', action='store_true', help='周回数ごとのドロップ数を作成')
+    parser.add_argument('-r', '--rates', action='store_true', help='周回数ごとの素材ドロップ率を作成')
+    parser.add_argument('-v', '--violin', action='store_true', help='ヴァイオリンプロットを作成')
+    parser.add_argument('-b', '--box', action='store_true', help='ボックスプロット(箱ひげ図)を作成')
+    parser.add_argument('--ridgeline', action='store_true', help='plot ridgeline plot')
+    parser.add_argument('-p', '--pc', action='store_true', help='平行座標を作成')
     parser.add_argument('-e', '--event', action='store_true', help='イベントアイテムのプロットを作成')
-
     args = parser.parse_args()
 
-    # 出力先が指定されていない場合はwebブラウザに出力
-    if (args.imgdir == None) & (args.web == False):
+    # If the output destination is not specified,
+    # the graph drawing result is output to the web browser.
+    if (args.imgdir == None) & (args.htmldir == None) & (args.web == False):
         args.web = True
 
-    if args.all:
-        args.web = False
+    if args.plot_all_graphs:
+        args.table = True
+        args.drops = True
+        args.rates = True
+        args.violin = True
+        args.box = True
+        args.ridgeline = True
+        args.pc = True
+        args.event = True
 
-    # ファイルが指定された場合
-    # csvファイルを引数として受け取る
-    # 指定するcsvファイルの枚数は複数にも対応
     if args.filenames:
-
-        # 複数のファイルの場合
         if type(args.filenames) == list:
             for csv_path in args.filenames:
-                plts(make_df(csv_path))
-        
-        # 1つのファイルの場合
+                plot_graphs(make_df(csv_path))
         else:
             csv_path = args.filenames
-            plts(make_df(csv_path))
+            plot_graphs(make_df(csv_path))
 
-    # ファイル名の指定がない場合は、テスト用のデータを実行
-    else:
-        # print('csvファイルの指定がないため、テストファイルによるプロットを実行します', end='')
-        BASE_DIR = Path(__file__).resolve().parent
-        args.all = True
+    # # ファイル名の指定がない場合は、テスト用のデータを実行
+    # else:
+    #     # print('csvファイルの指定がないため、テストファイルによるプロットを実行します', end='')
+    #     BASE_DIR = Path(__file__).resolve().parent
+    #     args.plot_all_graphs = True
 
-        # テスト用のグラフ画像のファイル出力先を適宜指定
-        args.imgdir = BASE_DIR / 'images'
+    #     # テスト用のグラフ画像のファイル出力先を適宜指定
+    #     args.imgdir = BASE_DIR / 'images'
 
-        if not args.imgdir.parent.is_dir():
-            args.imgdir.parent.mkdir(parents=True)
-        csv_path = BASE_DIR / 'test_csv_files\Silent_garden_B.csv'
-        plts(make_df(str(csv_path)))
+    #     if not args.imgdir.parent.is_dir():
+    #         args.imgdir.parent.mkdir(parents=True)
+    #     csv_path = BASE_DIR / 'test_csv_files\Silent_garden_B.csv'
+    #     plot_graphs(make_df(str(csv_path)))
 
     print('\r処理完了        ')
