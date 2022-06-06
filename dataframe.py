@@ -1,10 +1,12 @@
 import io
+import re
+from pathlib import Path
 import requests
+import traceback
+
 import pandas as pd
 import numpy as np
-import traceback
-from pathlib import Path
-import re
+
 
 class Data:
 
@@ -21,6 +23,7 @@ class Data:
         self.df             = self.mergeLines(self.df)
         self.df             = self.calc_qp_sum_columns(self.df, qp_sum=qp_sum)
         self.df             = self.remove_qp_sum_columns(self.df, qp_sum=qp_sum)
+        self.run            = self.get_number_of_run(self.df)
 
     def read_csv(self, csv_path):
         try:
@@ -106,7 +109,7 @@ class Data:
 
             # google drive から直にcsvを読み込んだ場合など
             if type(csv_path) == io.BytesIO:
-                quest_name = ''
+                quest_name = '[blank]'
 
             else:
                 # 日時を取り除く (バッチファイル利用時に発生する日時)
@@ -122,6 +125,7 @@ class Data:
 
                 # csvファイル名がクエスト名と仮定してそのまま利用
                 else:
+                    print(quest_name, Path(csv_path).stem)
                     quest_name = Path(csv_path).stem
 
         return quest_name
@@ -359,3 +363,12 @@ class Data:
             except KeyError as e:
                 print(e)
         return df
+
+    def get_number_of_run(self, df):
+
+        # 報酬QP(+xxxx) カラムから周回数を計算
+        try:
+            QpColName = df.filter(like='報酬QP', axis=1).columns[0]
+        except IndexError:
+            print('csvの1行目に 報酬QP が含まれていません')
+        return df[QpColName].sum()
