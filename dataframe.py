@@ -366,8 +366,10 @@ class Data:
     def get_number_of_run(self, df):
 
         # 報酬QP(+xxxx) カラムから周回数を計算
-        try:
-            QpColName = df.filter(like='報酬QP', axis=1).columns[0]
-        except IndexError:
-            print('csvの1行目に 報酬QP が含まれていません')
-        return df[QpColName].sum()
+        # try:
+        #     QpColName = df.filter(like='報酬QP', axis=1).columns[0]
+        # except IndexError:
+        #     print('csvの1行目に 報酬QP が含まれていません')
+        # return df[QpColName].sum()
+        num_of_run = df[self.reward_QP_name].sum()
+        return num_of_run
