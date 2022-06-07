@@ -511,6 +511,18 @@ def plt_table(df):
 
         デフォルトの列幅の比率は、15:6:9
     """
+    def is_integer(n):
+        """
+            Receives a number and determines if it is an integer
+            Returns True if it is an integer, False if it is not an integer
+        """
+        try:
+            float(n)
+        except ValueError:
+            return False
+        else:
+            return float(n).is_integer()
+
     MARGIN_TOP = 30
     MARGIN_BOTTOM = 30
     MARGIN_LEFT = 40
@@ -520,9 +532,6 @@ def plt_table(df):
     LINE_WIDTH = 1
     HIGHT_OFFSET = 1 # 上下の枠線が消える問題のため調整を行う
     quest_name_width = get_east_asian_width(quest_name)
-    # place_width = (
-    #     quest_name_width + 8 * 2 + 7 if 150 < quest_name_width + 8 * 2 + 14 else 150
-    # )
     if  150 < quest_name_width + 8 * 2 + 14:
         place_width = quest_name_width + 8 * 2 + 7
     else:
@@ -532,7 +541,6 @@ def plt_table(df):
     width = place_width + 150 + MARGIN_LEFT + MARGIN_RIGHT
 
     df = drop_filename(df)
-    
     runs = report_data.run
 
     # アイテムカラムは、報酬QP(+xxxx) 次のカラム以降と仮定
@@ -578,10 +586,8 @@ def plt_table(df):
         drstr = f'{dr:>.{sf}g}'
 
         # % を付与
-        # 小数点第1位 (the tenths place) が0の場合、.0が省略される
+        # 小数点第1位 (the tenths place) が0の場合、.0が省略されるため、.0を加える
         if is_integer(drstr):
-
-            # 明示的に.0の表示を指定
             rates.append(f'{dr:>.1f} %')
 
         else:
@@ -648,20 +654,6 @@ def plt_table(df):
 #         html_dir.parent.mkdir(parents=True)
 #     html_path = html_dir / Path(get_quest_name() + '-' + title + ".html")
 #     fig.write_html(fig, html_path)
-
-
-def is_integer(n):
-    """
-        数値が整数かどうか判定する
-
-        整数ならTrue, 整数以外ならFalseを返す
-    """
-    try:
-        float(n)
-    except ValueError:
-        return False
-    else:
-        return float(n).is_integer()
 
 
 def plt_event_line(df):
