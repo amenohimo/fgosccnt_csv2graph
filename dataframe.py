@@ -20,7 +20,7 @@ class Data:
         self.df             = self.remove_total_row(self.df, total_row)
         self.df             = self.cast(self.df)
         self.raw_df         = self.df
-        self.df             = self.mergeLines(self.df)
+        self.df             = self.merge_data_lines(self.df)
         self.df             = self.calc_qp_sum_columns(self.df, qp_sum=qp_sum)
         self.df             = self.remove_qp_sum_columns(self.df, qp_sum=qp_sum)
         self.run            = self.get_number_of_run(self.df)
@@ -192,7 +192,7 @@ class Data:
         #     print(prev_quest_name, ' ->', self.quest_name)
 
     # 複数行に分かれたデータを1行に統合する
-    def mergeLines(self, df):
+    def merge_data_lines(self, df):
 
         def get_end_indexes(df):
             """各周回の最後の画像から得たデータ行のindex値を取得する"""
