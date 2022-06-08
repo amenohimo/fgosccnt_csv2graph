@@ -18,10 +18,8 @@ fgosccnt.py : https://github.com/fgosc/fgosccnt
 ・画像に出力
 ・HTMLに出力
 """
-import sys
 import argparse
 import warnings
-import traceback
 import re
 from pathlib import Path
 import unicodedata
@@ -33,12 +31,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
-import seaborn as sns; sns.set()
+import seaborn as sns
+sns.set()
 import japanize_matplotlib
-from kaleido.scopes.plotly import PlotlyScope; scope = PlotlyScope()
-import cufflinks as cf; cf.go_offline()
+from kaleido.scopes.plotly import PlotlyScope
+scope = PlotlyScope()
+import cufflinks as cf
+cf.go_offline()
 
-from dataframe import *
+from dataframe import Data
 
 progname = "csv2graph"
 version = "0.0.1.20220606.2"
@@ -79,8 +80,8 @@ def output_graphs(
         offline.iplot(
             fig,
             config={
-                "displaylogo":False,
-                "modeBarButtonsToRemove":["sendDataToCloud"] }
+                "displaylogo": False,
+                "modeBarButtonsToRemove": ["sendDataToCloud"]}
         )
 
     def export_img_file(fig, title, img_format='png'):
@@ -95,14 +96,14 @@ def output_graphs(
     def _create_output_path(graph_type, args_dir, file_suffix):
         dir = Path(args_dir)
         if not dir.parent.is_dir():
-                dir.parent.mkdir(parents=True)
+            dir.parent.mkdir(parents=True)
         return dir / Path(quest_name + '-' + graph_type + '.' + file_suffix)
 
     if args.web:
         plot_on_web_browser(fig)
-    if args.imgdir != None:
+    if args.imgdir is not None:
         export_img_file(fig, graph_type)
-    if args.htmldir != None:
+    if args.htmldir is not None:
         exporpt_html(fig, graph_type)
 
 
@@ -162,31 +163,31 @@ def plt_not_ordered_graphs(df):
     AXES_HEIGHT = 600
 
     fig_height = MARGIN_TOP + AXES_HEIGHT + MARGIN_BOTTOM
-    fig_width =  100 * len(df.columns) # 70 * len(df.columns)
+    fig_width = 100 * len(df.columns)  # 70 * len(df.columns)
     Text_size_2_text_heiht = {15: 13, 16: 15, 17: 15, 18: 15}
     if FONT_SIZE < 15:
-        text_height = 13 # 未検証
+        text_height = 13  # 未検証
     elif 15 <= FONT_SIZE <= 18:
         text_height = Text_size_2_text_heiht[FONT_SIZE]
     elif 18 < FONT_SIZE:
-        text_height = 15 # 未検証
+        text_height = 15  # 未検証
     title_y = ( MARGIN_BOTTOM + AXES_HEIGHT + ( MARGIN_TOP + text_height) / 2 - TEXT_Y_OFFSET ) / fig_height
     df = drop_filename(df)
     ymax = df.max().values.max()
-    dtick = round(ymax/11/10)*10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
+    dtick = round(ymax / 11 / 10) * 10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
 
     layout = dict(
         title={
-            'text':quest_name,
-            'x':TITLE_X,
-            'y':title_y,
+            'text': quest_name,
+            'x': TITLE_X,
+            'y': title_y,
             'xanchor': 'center',
-            'font':dict(size=FONT_SIZE)},
+            'font': dict(size=FONT_SIZE)},
         height=fig_height,
         width=fig_width,
         margin=dict(l=MARGIN_LEFT, t=MARGIN_TOP, b=MARGIN_BOTTOM, r=MARGIN_RIGHT, pad=MARGIN_PAD, autoexpand=False),
         template="seaborn",
-        paper_bgcolor='#FFFFFF', # "#aaf",EAEAF2,DBE3E6,#FFFFFF (白)
+        paper_bgcolor='#FFFFFF',  # "#aaf",EAEAF2,DBE3E6,#FFFFFF (白)
         xaxis=dict(
             title_text='obtained items',
             title_font=dict(size=AXIS_FONT_SIZE)
@@ -246,7 +247,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
     vertical_spacing = 72  # サブプロット間の間隔 [pixel]
     template = "seaborn"
     if rate:
-        fill = 'tozerox' #  ['none', 'tozeroy', 'tozerox', 'tonexty', 'tonextx','toself', 'tonext']
+        fill = 'tozerox'  #  ['none', 'tozeroy', 'tozerox', 'tonexty', 'tonextx','toself', 'tonext']
         ticksuffix = '%'
         mode = 'lines+markers'
     else:
@@ -258,8 +259,8 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
     
     total_runs = df.index.max() + 1
     number_of_cols = 2
-    r = int(len(df.columns)/number_of_cols)
-    number_of_rows = r if len(df.columns) %2 == 0 else r + 1
+    r = int(len(df.columns) / number_of_cols)
+    number_of_rows = r if len(df.columns) % 2 == 0 else r + 1
     fig_height = height_of_sub_figure * number_of_rows +\
         MARGIN_TOP + vertical_spacing * (number_of_rows - 1) + MARGIN_BOTTOM
 
@@ -276,7 +277,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
 
     for i, col in enumerate(df.columns):
         y = df[col]
-        ymean = y[len(y)-1]        
+        ymean = y[len(y) - 1]        
         is_exp = re.search('種火|灯火|猛火|業火', col) != None
 
         # %表記にしないアイテム
@@ -284,7 +285,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         if 300 <= ymean:
             df[col] /= 100
             y = df[col]
-            ymean = y[len(y)-1]
+            ymean = y[len(y) - 1]
             if rate:
                 ytext = '平均ドロ数'
             tix = ''
@@ -293,7 +294,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         elif (100 <= ymean) & is_exp:
             df[col] /= 100
             y = df[col]
-            ymean = y[len(y)-1]
+            ymean = y[len(y) - 1]
             if rate:
                 ytext = '平均ドロ数'
             tix = ''
@@ -330,13 +331,13 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             line_width = 1
 
         # 200周以上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
-        else: 
+        else:
 
             # ドロ率はfillと点にする
-            if rate: 
+            if rate:
                 marker_size = 1
                 line_width = 0
-            
+
             # ドロ数は線がないと意味不明瞭になるので、線を残す
             else: 
                 marker_size = 2
@@ -344,7 +345,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
 
         fig.add_trace(
             go.Scatter(
-                x=df.index+1, y=y,
+                x=df.index + 1, y=y,
                 mode=mode,
                 name=col,
                 fill=fill,
@@ -360,19 +361,19 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
             ),
 
             # グラフの位置
-            row=int(i/2)+1,
-            col=i%2+1
+            row=int(i / 2) + 1,
+            col=i % 2 + 1
         )
 
         fig.update_yaxes(
             title_text=ytext,
             title_standoff=5,
-            title_font={"size":11},
+            title_font={"size": 11},
             range=[ymin, ymax],
             ticksuffix=tix,
-            type="linear", # log
+            type="linear",  # log
             # rangemode="tozero",
-            row=int(i/2)+1, col=i%2+1
+            row=int(i / 2) + 1, col=i % 2 + 1
         )
 
         """
@@ -429,23 +430,23 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
 
             title_text='周回数',
             title_standoff=0,
-            title_font={"size":11},
+            title_font={"size": 11},
 
             # x軸のラベルの位置の調整は、ドキュメントを探した限りだとやり方がなかった
             # 表示をOFFにして、位置を指定してテキストを直打することで代用はおそらく可能
             # title_xanchor='right',　
 
-            row=int(i/2)+1, col=i%2+1
+            row=int(i / 2) + 1, col=i % 2 + 1
         )
 
     fig.update_layout(
-        height=fig_height, width=1000, 
+        height=fig_height, width=1000,
 
         # 背景色を変えてfigの範囲を確認する場合や、単に背景色を変えたい時に変更
-        paper_bgcolor='#FFFFFF',# "#aaf",EAEAF2,DBE3E6
+        paper_bgcolor='#FFFFFF',  # "#aaf",EAEAF2,DBE3E6
 
-        title={'text':title,'x':0.5,'y':0.985,'xanchor': 'center', 'font':dict(size=15)},
-        font=dict(size=12), template=template, legend = dict(x=1.005, y=1),
+        title={'text': title,'x': 0.5, 'y': 0.985, 'xanchor': 'center', 'font': dict(size=15)},
+        font=dict(size=12), template=template, legend=dict(x=1.005, y=1),
         margin=dict(l=MARGIN_LEFT, t=MARGIN_TOP, b=MARGIN_BOTTOM, r=MARGIN_RIGHT, pad=0, autoexpand=False)
     )
     output_graphs(fig, title)
@@ -470,7 +471,7 @@ def plt_rate(df):
         tmp[i] = tmp[i] + tmp[i-1]
 
     # それぞれの周回数で割り、%表記に合わせるために *100
-    droprate_df = pd.DataFrame(columns=df.columns, data=[tmp[i]  / (i + 1) * 100 for i in range(n)])
+    droprate_df = pd.DataFrame(columns=df.columns, data=[tmp[i] / (i + 1) * 100 for i in range(n)])
 
     # ドロ数は%だと見にくいのでそのままで
     # droprate_df['ドロ数'] /= 100
@@ -530,9 +531,9 @@ def plt_table(df):
     MARGIN_PAD = 0
     CELL_HEIGHT = 26
     LINE_WIDTH = 1
-    HIGHT_OFFSET = 1 # 上下の枠線が消える問題のため調整を行う
+    HIGHT_OFFSET = 1  # 上下の枠線が消える問題のため調整を行う
     quest_name_width = get_east_asian_width(quest_name)
-    if  150 < quest_name_width + 8 * 2 + 14:
+    if 150 < quest_name_width + 8 * 2 + 14:
         place_width = quest_name_width + 8 * 2 + 7
     else:
         place_width = 150
@@ -546,10 +547,10 @@ def plt_table(df):
     # アイテムカラムは、報酬QP(+xxxx) 次のカラム以降と仮定
     # ドロップしたアイテム名を取得
     QpColIndex = df.columns.get_loc(report_data.reward_QP_name)
-    items = df.columns[ QpColIndex + 1 :]
+    items = df.columns[QpColIndex + 1:]
 
     # ドロップしたアイテム数を取得
-    drops = df.sum().values[ QpColIndex + 1 :]
+    drops = df.sum().values[QpColIndex + 1:]
 
 
     # ドロップ率
@@ -568,7 +569,7 @@ def plt_table(df):
         dr = i / runs * 100
 
         # 整数部の桁数
-        n = len(str(int(dr//1)))
+        n = len(str(int(dr // 1)))
 
         # 1000% 以上の場合に、改行されないよう調整
         if n >= 4:
@@ -636,7 +637,7 @@ def plt_table(df):
         width=width,
         font=dict(size=14),
         # 背景色を変えてfigの範囲を確認する場合や、単に背景色を変えたい時に変更
-        paper_bgcolor='white', # white', '#FFFFFF', "#aaf", '#EAEAF2', '#DBE3E6'
+        paper_bgcolor='white',   # white', '#FFFFFF', "#aaf", '#EAEAF2', '#DBE3E6'
         margin=dict(
             l=MARGIN_LEFT,
             r=MARGIN_RIGHT,
@@ -660,7 +661,7 @@ def plt_event_line(df):
     """
         ボーナス毎のイベントアイテムのドロップ数を線形グラフを表示する
     """
-   
+
     ##  イベントアイテムに使用するDF1
     #       TODO 変数名を考える
     #
@@ -675,14 +676,14 @@ def plt_event_line(df):
     # |  0 | チェーンソー | チェーンソー(x3) |           1002 |      3 |         3006 |
     # |  1 | 薪           | 薪(x3)           |            153 |      3 |          459 |
     E_df = pd.DataFrame({
-        'アイテム名':[re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
+        'アイテム名': [re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
         '枠名': df.columns[df.columns.str.contains('\(x')],
-        'ドロップ枠数':[df[i].sum() for i in df.columns[df.columns.str.contains('\(x')]],
-        '枠数':[np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]],
-        'アイテム数':[df[i].sum() * np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]]
+        'ドロップ枠数': [df[i].sum() for i in df.columns[df.columns.str.contains('\(x')]],
+        '枠数': [np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]],
+        'アイテム数': [df[i].sum() * np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]]
     })
 
-    ##  イベントアイテムに使用するDF2
+    #  イベントアイテムに使用するDF2
     #       TODO 変数名を考える
 
     #       データ
@@ -718,7 +719,7 @@ def plt_event_line(df):
         index=['+' + str(i) for i in range(13)]
     )
 
-    ##  イベントアイテムに使用するDF3
+    #  イベントアイテムに使用するDF3
     #       TODO 変数名を考える
 
     #       データ
@@ -773,13 +774,13 @@ def plt_event_line(df):
         from plotly.subplots import make_subplots
         template = "seaborn"
         fig = make_subplots(rows=1, cols=2, subplot_titles=('枠毎の平均ドロップ数', 'アイテム毎の平均ドロップ数'))
-        
+
         # 左
         for i in range(len(E_df2.columns)):
             fig.add_trace(
                 go.Scatter(
-                    x=E_df2.index, # 礼装ボーナス増加数
-                    y=E_df2[E_df2.columns[i]], # 平均アイテムドロップ数
+                    x=E_df2.index,              # 礼装ボーナス増加数
+                    y=E_df2[E_df2.columns[i]],  # 平均アイテムドロップ数
                     name=E_df2.columns[i]
                 ),
                 row=1, col=1

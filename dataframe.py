@@ -58,7 +58,7 @@ class Data:
     # ドロ数の列 19+ 20+ 21+ 20++ etc が出現した行以降は全てstr型になるため、
     # str型になっている数値を数値型に変換
     if not self.isNewSpec:
-      for i, row in enumerate(df[df.columns[1]]):
+      for i, row in enumerate(df['ドロ数']):
         if not ('+' in str(row)):
           df.iloc[i, 1] = np.uint16(row)
 
@@ -291,12 +291,12 @@ class Data:
       df.iloc[ sI : sI + 1 ] = df.iloc[ sI : sI + 1, : self.QP_col_loc ].join(pd.DataFrame(
         sum_rows(df, sI, eI),
         columns = df.iloc[ : , self.QP_col_loc : ].columns,
-        index   = [sI]
+        index = [sI]
       ))
 
       #ドロ数を更新する
       # ex. 20++ → 54,  (manwaka) 46 → 47
-      df.iloc[sI : sI + 1, self.dro_col_loc : self.dro_col_loc + 1 ] = df.iloc[sI : sI + 1, self.QP_col_loc : ].sum(axis=1)
+      df.iloc[sI : sI + 1, self.dro_col_loc: self.dro_col_loc + 1] = df.iloc[sI: sI + 1, self.QP_col_loc : ].sum(axis=1)
 
 
     # 既に足した行を削除する
@@ -324,17 +324,17 @@ class Data:
 
       # 万, k などを数値に変換
       def change_value(line):
-        line = re.sub("百万", '000000',  str(line))
-        line = re.sub("万",   '0000',  str(line))
-        line = re.sub("千",   '000',  str(line))
-        line = re.sub("M",  '000000',  str(line))
-        line = re.sub("K",  '000',  str(line))
+        line = re.sub("百万", '000000', str(line))
+        line = re.sub("万", '0000', str(line))
+        line = re.sub("千", '000', str(line))
+        line = re.sub("M", '000000', str(line))
+        line = re.sub("K", '000', str(line))
         return line
 
       # i番目のQPカラムにおける QPドロップ値 の series を取得
       def get_drop_qp_values(i):
-        qp_value = int( re.search(r'\d+', change_value( qp_col_names[i]) ).group() )
-        qp_drops = qp_cols[ qp_col_names[i] ]
+        qp_value = int(re.search(r'\d+', change_value( qp_col_names[i]) ).group())
+        qp_drops = qp_cols[qp_col_names[i]]
         return qp_value * qp_drops
 
       # 獲得QP合計を計算する
