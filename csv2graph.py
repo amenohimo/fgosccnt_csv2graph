@@ -31,9 +31,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
+import japanize_matplotlib
 import seaborn as sns
 sns.set()
-import japanize_matplotlib
 from kaleido.scopes.plotly import PlotlyScope
 scope = PlotlyScope()
 import cufflinks as cf
@@ -171,7 +171,7 @@ def plt_not_ordered_graphs(df):
         text_height = Text_size_2_text_heiht[FONT_SIZE]
     elif 18 < FONT_SIZE:
         text_height = 15  # 未検証
-    title_y = ( MARGIN_BOTTOM + AXES_HEIGHT + ( MARGIN_TOP + text_height) / 2 - TEXT_Y_OFFSET ) / fig_height
+    title_y = (MARGIN_BOTTOM + AXES_HEIGHT + (MARGIN_TOP + text_height) / 2 - TEXT_Y_OFFSET) / fig_height
     df = drop_filename(df)
     ymax = df.max().values.max()
     dtick = round(ymax / 11 / 10) * 10 if 200 < ymax else 10 if 100 < ymax else 5 if 30 < ymax else 1
@@ -238,7 +238,7 @@ def _get_box_data(df):
 
 
 def plt_all(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
-    
+
     MARGIN_TOP = 65
     MARGIN_BOTTOM = 55
     MARGIN_LEFT = 70
@@ -247,7 +247,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
     vertical_spacing = 72  # サブプロット間の間隔 [pixel]
     template = "seaborn"
     if rate:
-        fill = 'tozerox'  #  ['none', 'tozeroy', 'tozerox', 'tonexty', 'tonextx','toself', 'tonext']
+        fill = 'tozerox'  # ['none', 'tozeroy', 'tozerox', 'tonexty', 'tonextx','toself', 'tonext']
         ticksuffix = '%'
         mode = 'lines+markers'
     else:
@@ -256,7 +256,6 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         mode = "lines+markers"
         ytext = 'ドロ数'
     df = drop_filename(df)
-    
     total_runs = df.index.max() + 1
     number_of_cols = 2
     r = int(len(df.columns) / number_of_cols)
@@ -277,8 +276,8 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
 
     for i, col in enumerate(df.columns):
         y = df[col]
-        ymean = y[len(y) - 1]        
-        is_exp = re.search('種火|灯火|猛火|業火', col) != None
+        ymean = y[len(y) - 1]     
+        is_exp = re.search('種火|灯火|猛火|業火', col) is not None
 
         # %表記にしないアイテム
         # Over 300%
@@ -445,7 +444,7 @@ def plt_all(df, title='各周回数における素材ドロップ数', rate=Fals
         # 背景色を変えてfigの範囲を確認する場合や、単に背景色を変えたい時に変更
         paper_bgcolor='#FFFFFF',  # "#aaf",EAEAF2,DBE3E6
 
-        title={'text': title,'x': 0.5, 'y': 0.985, 'xanchor': 'center', 'font': dict(size=15)},
+        title={'text': title, 'x': 0.5, 'y': 0.985, 'xanchor': 'center', 'font': dict(size=15)},
         font=dict(size=12), template=template, legend=dict(x=1.005, y=1),
         margin=dict(l=MARGIN_LEFT, t=MARGIN_TOP, b=MARGIN_BOTTOM, r=MARGIN_RIGHT, pad=0, autoexpand=False)
     )
@@ -468,7 +467,7 @@ def plt_rate(df):
             continue
 
         # 現在の値と前の値を加算
-        tmp[i] = tmp[i] + tmp[i-1]
+        tmp[i] = tmp[i] + tmp[i - 1]
 
     # それぞれの周回数で割り、%表記に合わせるために *100
     droprate_df = pd.DataFrame(columns=df.columns, data=[tmp[i] / (i + 1) * 100 for i in range(n)])
@@ -498,7 +497,7 @@ def plt_table(df):
         クエストの名前は、以下から取得する
           - csvのファイル名
           - file nameの2行目 (fgoscdataに対応)
-          - TODO　指定できるようにする
+          - TODO 指定できるようにする
 
         表の幅は自動で調整する
             既知の問題
@@ -551,7 +550,6 @@ def plt_table(df):
 
     # ドロップしたアイテム数を取得
     drops = df.sum().values[QpColIndex + 1:]
-
 
     # ドロップ率
 
@@ -662,7 +660,7 @@ def plt_event_line(df):
         ボーナス毎のイベントアイテムのドロップ数を線形グラフを表示する
     """
 
-    ##  イベントアイテムに使用するDF1
+    #  イベントアイテムに使用するDF1
     #       TODO 変数名を考える
     #
     #       データ
@@ -742,10 +740,10 @@ def plt_event_line(df):
     # | +12 |       227.727  | 34.7727  |
     E_df3 = pd.DataFrame()
     for i in E_df2.columns:
-        if not re.search('.+(?=\(x\d)', i).group(0) in E_df3.columns: # アイテムの列がまだなければ作成
+        if not re.search('.+(?=\(x\d)', i).group(0) in E_df3.columns:  # アイテムの列がまだなければ作成
             E_df3[re.search('.+(?=\(x\d)', i).group(0)] = E_df2[i]
         else:
-            E_df3[re.search('.+(?=\(x\d)', i).group(0)] += E_df2[i] # 既にあれば加算
+            E_df3[re.search('.+(?=\(x\d)', i).group(0)] += E_df2[i]  # 既にあれば加算
 
     # 確認用コード
     # from tabulate import tabulate # コード確認用
@@ -754,8 +752,8 @@ def plt_event_line(df):
 
     max2 = E_df2.max().max()
     max3 = E_df3.max().max()
-    dtick2 = round(max2/11/10)*10 if 130 < max2 else 10 if 70 < max2 else 5 if 13 < max2 else 1
-    dtick3 = round(max3/11/10)*10 if 130 < max3 else 10 if 70 < max3 else 5 if 13 < max3 else 1
+    dtick2 = round(max2 / 11 / 10) * 10 if 130 < max2 else 10 if 70 < max2 else 5 if 13 < max2 else 1
+    dtick3 = round(max3 / 11 / 10) * 10 if 130 < max3 else 10 if 70 < max3 else 5 if 13 < max3 else 1
 
     # イベントアイテム毎にドロ枠が何種類あるか
     keys = E_df3.columns
@@ -764,7 +762,7 @@ def plt_event_line(df):
     for j in E_df3.columns:
         for i in range(len(E_df2.columns)):
             m = re.search(j, E_df2.columns[i])
-            if m != None:
+            if m is not None:
                 d[j] += 1
 
     # 2種類以上ある場合は、2つグラフを表示
@@ -825,18 +823,18 @@ def plt_event_line(df):
             height=570,
             width=1000,
             title={
-                'text':"イベントアイテムの平均ドロップ数",
-                'x':0.45,
-                'y':0.98,
+                'text': "イベントアイテムの平均ドロップ数",
+                'x': 0.45,
+                'y': 0.98,
                 'xanchor': 'center',
-                'font':dict(size=15)
+                'font': dict(size=15)
             },
             font=dict(size=12),
             annotations=[dict(font=dict(size=14))],
             template=template,
             legend=dict(x=1.005, y=1),
             margin=dict(l=70, t=65, b=55, r=120, pad=0, autoexpand=False),
-            paper_bgcolor='white' # 'white' "LightSteelBlue"
+            paper_bgcolor='white'  # 'white' "LightSteelBlue"
         )
         output_graphs(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
@@ -870,16 +868,16 @@ def plt_event_line(df):
         fig.update_layout(
             height=550, width=480,
             title={
-                'text':"イベントアイテムの平均ドロップ数",
-                # 'x':0.45, 'y':0.98,
-                'x':0.5, 'y':0.96,
+                'text': "イベントアイテムの平均ドロップ数",
+                # 'x': 0.45, 'y':0.98,
+                'x': 0.5, 'y': 0.96,
                 'xanchor': 'center',
-                'font':dict(size=14)
+                'font': dict(size=14)
             },
             font=dict(size=12),
             template=template,
-            legend=dict(x=0.03, y=.97), # 左上
-            # legend=dict(x=1.05, y=1), # 右上外
+            legend=dict(x=0.03, y=.97),  # 左上
+            # legend=dict(x=1.05, y=1),  # 右上外
             margin=dict(l=70, t=50, b=55, r=38, pad=0, autoexpand=False),
             paper_bgcolor='white'
         )
@@ -892,15 +890,15 @@ def plt_line_matplot(df):
 
     """
     E_df = pd.DataFrame({
-        'アイテム名':[re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
+        'アイテム名': [re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
         '枠名': df.columns[df.columns.str.contains('\(x')],
-        'ドロップ枠数':[df[i].sum() for i in df.columns[df.columns.str.contains('\(x')]],
-        '枠数':[np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]],
-        'アイテム数':[df[i].sum() * np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]]
+        'ドロップ枠数': [df[i].sum() for i in df.columns[df.columns.str.contains('\(x')]],
+        '枠数': [np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]],
+        'アイテム数': [df[i].sum() * np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]]
     })
 
     E_df2 = pd.DataFrame(
-        np.array([(E_df['枠数'].values[j]+i)*E_df['ドロップ枠数'].values[j]/len(df.index.values)
+        np.array([(E_df['枠数'].values[j] + i) * E_df['ドロップ枠数'].values[j] / len(df.index.values)
                   for i in range(13) for j in range(len(E_df))]).reshape(13, len(E_df)),
         columns=[i for i in E_df['枠名']],
         index=['+' + str(i) for i in range(13)]
@@ -908,23 +906,23 @@ def plt_line_matplot(df):
 
     E_df3 = pd.DataFrame()
     for i in E_df2.columns:
-        if not re.search('.+(?=\(x\d)', i).group(0) in E_df3.columns: # アイテムの列がまだなければ作成
+        if not re.search('.+(?=\(x\d)', i).group(0) in E_df3.columns:  # アイテムの列がまだなければ作成
             E_df3[re.search('.+(?=\(x\d)', i).group(0)] = E_df2[i]
         else:
-            E_df3[re.search('.+(?=\(x\d)', i).group(0)] += E_df2[i] # 既にあれば加算
+            E_df3[re.search('.+(?=\(x\d)', i).group(0)] += E_df2[i]    # 既にあれば加算
 
-    #prepare data
+    # prepare data
     x = range(10)
     y = [i * 0.5 for i in range(10)]
 
-    #2行1列のグラフの描画
-    #subplot で 2*1 の領域を確保し、それぞれにグラフ・表を描画
+    # 2行1列のグラフの描画
+    # subplot で 2*1 の領域を確保し、それぞれにグラフ・表を描画
     nrow = 2
     ncol = 2
     # plt.figure(figsize=(6*ncol,6*nrow))
     plt.figure(figsize=(12, 7))
 
-    #１つ目のsubplot領域にグラフ
+    # 1つ目のsubplot領域にグラフ
     plt.subplot(nrow, ncol, 1)
     for i in range(len(E_df2.columns)):
         plt.plot(
@@ -947,22 +945,22 @@ def plt_line_matplot(df):
     plt.xlabel('礼装ボーナス')
     plt.ylabel('ドロップ数')
 
-    #2つ目のsubplot領域に表
+    # 2つ目のsubplot領域に表
     plt.subplot(nrow, ncol, 3)
     column_names = ['col_{}'.format(i) for i in range(10)]
     row_names = ['x', 'y']
-    plt.axis('off')  #デフォルトでgraphが表示されるので、非表示設定
-    values = [x, y] # [[1,2,3],[4,5,6]]
+    plt.axis('off')  # デフォルトでgraphが表示されるので、非表示設定
+    values = [x, y]  # [[1,2,3],[4,5,6]]
     plt.table(cellText=values, colLabels=column_names, rowLabels=row_names, loc='upper center')
 
     plt.subplot(nrow, ncol, 4)
     column_names = ['col_{}'.format(i) for i in range(10)]
     row_names = ['x', 'y']
-    plt.axis('off')  #デフォルトでgraphが表示されるので、非表示設定
-    values = [x, y] # [[1,2,3],[4,5,6]]
+    plt.axis('off')  # デフォルトでgraphが表示されるので、非表示設定
+    values = [x, y]  # [[1,2,3],[4,5,6]]
     plt.table(cellText=values, colLabels=column_names, rowLabels=row_names, loc='upper center')
 
-    #表示
+    # 表示
     plt.subplots_adjust(left=0.05, right=0.91, bottom=0.1, top=0.95)
     plt.show()
 
@@ -977,17 +975,19 @@ def plt_sunburst(df):
         TODO ドロップ数を表示するか、枠数の比率を表示するか要検討
     """
     fig = px.sunburst(
-        pd.DataFrame({'アイテム名':[re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
-                    '枠名': df.columns[df.columns.str.contains('\(x')],
-                    'アイテム数':[df[i].sum() * np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]]}),
+        pd.DataFrame({
+            'アイテム名': [re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
+            '枠名': df.columns[df.columns.str.contains('\(x')],
+            'アイテム数': [df[i].sum() * np.uint8(re.search('(?<=\(x)\d+', i).group(0)) for i in df.columns[df.columns.str.contains('\(x')]]
+        }),
         path=['アイテム名', '枠名'], values='アイテム数',
-    #     color='アイテム数',
-    #     color_continuous_scale='RdBu'
+        # color='アイテム数',
+        # color_continuous_scale='RdBu'
     )
-    template="seaborn" # ["plotly", "plotly_white", "plotly_dark", "ggplot2", "seaborn", "simple_white", "none"]
+    template = "seaborn"  # ["plotly", "plotly_white", "plotly_dark", "ggplot2", "seaborn", "simple_white", "none"]
     fig.update_layout(
-        height=600, width=1000, title={'text':"イベントアイテムの割合",'x':0.5,'xanchor': 'center'},
-        font=dict(size=12), template=template, legend = dict(x = 1.005, y = 1))
+        height=600, width=1000, title={'text': "イベントアイテムの割合",'x': 0.5, 'xanchor': 'center'},
+        font=dict(size=12), template=template, legend=dict(x=1.005, y=1))
     output_graphs(fig, 'イベントアイテムの割合')
 
 
@@ -997,7 +997,7 @@ def plt_simple_parallel_coordinates(df):
 
         シンプルすぎて細かい表示や拘束範囲の調整ができないため、`plotly.express.parallel_coordinates`を使うのは
         表示のテストをしたいときに使う程度 (実はできるのかもしれないが方法がわからない)
-            
+
             できないこと
               - データ軸の最大最小値の設定
               - 拘束範囲の設定
@@ -1034,47 +1034,48 @@ def plt_parallel_coordinates(df):
 
     # 報酬QPを削除
     df = df.drop(columns=df.filter(like='報酬', axis=1))
-    
+
     # 重複データを削除する
     df = df.drop_duplicates()
 
     dims = []
     width = 970
     # margin_left = margin_right = max([len(col) for col in df.columns])*10/2
-    # label_len = int(np.floor((width - margin_left - margin_right) / (len(df.columns) - 1) / 10)) - 1 # 軸の間隔より
-    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns])/2 + 4 # プロポーショナルの場合もあるので、念のため +4
+    # label_len = int(np.floor((width - margin_left - margin_right) / (len(df.columns) - 1) / 10)) - 1  # 軸の間隔より
+    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns]) / 2 + 4  # プロポーショナルの場合もあるので、念のため +4
     label_width = int(np.floor((width - margin_left - margin_right) / (len(df.columns))))
     for i in range(len(df.columns)):
         rmax = df[df.columns[i]].max()
-        rmin = df[df.columns[i]].min() # if df.columns[i] == 'ドロ数' else 0 # 選択できるようにするべき?
-        # cmin = 
+        rmin = df[df.columns[i]].min()  # if df.columns[i] == 'ドロ数' else 0 # 選択できるようにするべき?
+        # cmin =
         # cmax =
-        l=''
+        lab = ''
         for s in df.columns[i]:
-            if label_width < get_east_asian_width(l+s, 5, 10):
+            if label_width < get_east_asian_width(lab + s, 5, 10):
                 break
-            l += s
-        label_len = len(l)
+            lab += s
+        label_len = len(lab)
         dims.append(
-            dict(range=[rmin, rmax],
-        #          constraintrange=[cmin, cmax],  # TODO　引数で渡す？
-                tickvals=list(set(df[df.columns[i]].tolist())), # ユニークな値をメモリ表示用に使用
-                label=df.columns[i].replace('コイン', '').replace('報酬', '')[:label_len], # 長すぎると重なって読めなくなるので、適度にカットする
+            dict(
+                range=[rmin, rmax],
+                #  constraintrange=[cmin, cmax],  # TODO　引数で渡す？
+                tickvals=list(set(df[df.columns[i]].tolist())),  # ユニークな値をメモリ表示用に使用
+                label=df.columns[i].replace('コイン', '').replace('報酬', '')[:label_len],  # 長すぎると重なって読めなくなるので、適度にカットする
                 values=df[df.columns[i]]
             )
         )
     lin = dict(
         color=df[df.columns[0]],
-        colorscale='jet', # px.colors.diverging.Portland # 視認性はデータの把握に重要なのでいい設定を探す
-        showscale=False,  # TODO　どちらも役に立つので、引数で指定できるようにするべきか？
+        colorscale='jet',  # px.colors.diverging.Portland # 視認性はデータの把握に重要なのでいい設定を探す
+        showscale=False,   # TODO　どちらも役に立つので、引数で指定できるようにするべきか？
         cmin=df[df.columns[0]].min(),
         cmax=df[df.columns[0]].max()
-    )    
-    fig = go.Figure(data=go.Parcoords(line = lin, dimensions = dims))
+    )
+    fig = go.Figure(data=go.Parcoords(line=lin, dimensions=dims))
     fig.update_layout(
         width=width, height=400,
-        margin = dict(l=margin_left, r=margin_right, b=20, t=50, pad=4),
-        paper_bgcolor='white'#, #'black' # "LightSteelBlue" # 視認性はデータの把握に重要なのでいい設定を探す
+        margin=dict(l=margin_left, r=margin_right, b=20, t=50, pad=4),
+        paper_bgcolor='white'  #, 'black' 'LightSteelBlue' # 視認性はデータの把握に重要なのでいい設定を探す
         # plot_bgcolor='gold' # 'rgba(0,0,0,0)'
     )
     output_graphs(fig, 'parallel_coordinates')
@@ -1126,7 +1127,7 @@ if __name__ == '__main__':
 
     # If the output destination is not specified,
     # the graph drawing result is output to the web browser.
-    if (args.imgdir == None) & (args.htmldir == None) & (args.web == False):
+    if (args.imgdir is None) & (args.htmldir is None) & (args.web is False):
         args.web = True
 
     if args.plot_all_graphs:
