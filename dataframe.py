@@ -60,7 +60,7 @@ class Data:
     if not self.isNewSpec:
       for i, row in enumerate(df['ドロ数']):
         if not ('+' in str(row)):
-          df.iloc[i, 1] = np.uint16(row)
+          df.iloc[i, self.dro_col_loc] = np.uint16(row)
 
     # ドロ数より後の列は numpy.float64 として読み込まれるので numpy.uint16 にキャスト
     for col in df.columns:
