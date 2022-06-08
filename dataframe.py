@@ -146,6 +146,7 @@ class Data:
             if isNewSpecifications:
                 for i in range(df.index.start, df.index.stop):
                     sum = sum + item[i]
+                    logging.debug(f'i={i}/{df_end}, drop={drop[i]}, item={item[i]}, sum={sum}')  # temp
                     value_of_one_image_is_equal = drop[i] == item[i]
                     value_of_one_image_is_equal_manwaka = drop[i] == item[i] - 1
                     values_of_sum_are_equal = drop[i] == sum
