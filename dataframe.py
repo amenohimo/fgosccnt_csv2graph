@@ -84,14 +84,6 @@ class Data:
   def get_qp_col_loc(self, df):
     return df.columns.get_loc(self.reward_QP_name) + 1
 
-  # ドロップ数の列の位置を取得
-  def get_drop_col_loc(self):
-    try:
-      drop_num = self.df.filter(like='ドロ数', axis=1).columns[0]
-    except IndexError:
-      print('csvの1行目に ドロ数 が含まれていません')
-    return df.columns.get_loc('ドロ数') + 1
-
   # クエスト名を取得する
   def load_quest_name(self, csv_path):
 
