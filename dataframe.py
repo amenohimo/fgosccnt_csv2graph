@@ -139,58 +139,7 @@ class Data:
       except IndexError:
         print(traceback.format_exc())
     return df
-
-  # def shorten_the_quest_name(self):
-  #   is_short = False
-
-  #   # try:
-  #   m = re.search('[a-zA-Z]+', self.quest_name)
-
-  #   if self.quest_name == '[blank]':
-  #     pass
-
-  #   elif m != None:
-  #     prev_quest_name = self.quest_name
-
-      # アルファベットから始まっている場合は、アルファベットと文末のみにする
-      # m = re.search('^[a-zA-Z]+', self.quest_name)
-      # if m != None:
-      #   # m = re.search('([a-zA-Z]+)(.+)(\s.+$)', self.quest_name)
-        # m = re.search('([a-zA-Z]+)([^a-zA-Z]+)(\s)(.+$)', self.quest_name)
-        # if m != None:
-        #   self.quest_name = m.group(1) + m.group(3) + m.group(4)
-      #     if prev_quest_name != self.quest_name:
-      #       is_short = True
-
-      # アルファベット以外から始まっている場合は、アルファベットを取り除く
-      # else:
-
-        # アルファベットで終わる場合、アルファベットを取り除く
-        # m = re.search('[a-zA-Z]+$', self.quest_name)
-        # if m != None:
-        #   m = re.search('[^a-zA-Z]+', self.quest_name)
-        #   if m != None:
-        #     self.quest_name = m.group(0)
-        #   if prev_quest_name != self.quest_name:
-        #     is_short = True
-
-        # アルファベットが挟まっている場合
-        # VIP級など、クエストのランクがアルファベットになっている場合があったため、
-        # そのままにする
-        # else:
-          # m = re.search('([^a-zA-Z]+)([a-zA-Z]+)(.+$)', self.quest_name)
-          # self.quest_name = m.group(1) + m.group(3)
-          # is_short = True
-
-    # except Exception:
-    #   print('Exception occured. self.quest_name value is:', self.quest_name)
-    #   print(traceback.format_exc())
-
-    # self.quest_name = re.sub('\s+', ' ', self.quest_name)
-    # if is_short:
-    #   print('アルファベットが含まれているため、クエスト名を短縮します')
-    #   print(prev_quest_name, ' ->', self.quest_name)
-
+    
   # 複数行に分かれたデータを1行に統合する
   def merge_data_lines(self, df):
 
