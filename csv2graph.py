@@ -986,7 +986,7 @@ def plt_sunburst(df):
     )
     template = "seaborn"  # ["plotly", "plotly_white", "plotly_dark", "ggplot2", "seaborn", "simple_white", "none"]
     fig.update_layout(
-        height=600, width=1000, title={'text': "イベントアイテムの割合",'x': 0.5, 'xanchor': 'center'},
+        height=600, width=1000, title={'text': "イベントアイテムの割合", 'x': 0.5, 'xanchor': 'center'},
         font=dict(size=12), template=template, legend=dict(x=1.005, y=1))
     output_graphs(fig, 'イベントアイテムの割合')
 
@@ -1075,7 +1075,7 @@ def plt_parallel_coordinates(df):
     fig.update_layout(
         width=width, height=400,
         margin=dict(l=margin_left, r=margin_right, b=20, t=50, pad=4),
-        paper_bgcolor='white'  #, 'black' 'LightSteelBlue' # 視認性はデータの把握に重要なのでいい設定を探す
+        paper_bgcolor='white'  # 'black' 'LightSteelBlue' # 視認性はデータの把握に重要なのでいい設定を探す
         # plot_bgcolor='gold' # 'rgba(0,0,0,0)'
     )
     output_graphs(fig, 'parallel_coordinates')

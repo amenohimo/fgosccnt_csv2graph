@@ -194,7 +194,7 @@ class Data:
 
             else:
                 try:
-                    end_indexes = d[~d['ドロ数'].astype(str).str.contains('\+', na=False)].index
+                    end_indexes = df[~df['ドロ数'].astype(str).str.contains('\+', na=False)].index
                 except AttributeError as e:
                     print(e)
 
