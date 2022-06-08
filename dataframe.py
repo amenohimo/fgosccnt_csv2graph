@@ -195,51 +195,74 @@ class Data:
 
     def get_end_indexes(df):
       """各周回の最後の画像から得たデータ行のindex値を取得する"""
-      df_end_index = df.index.stop - 1
+      drop: pd.core.series.Series = df['ドロ数']
+      item: pd.core.series.Series = df['アイテム数']
+      df_end = df.index.stop - 1
       sum = 0
       end_indexes = []
-      if self.isNewSpec:
+      isNewSpecifications = 'アイテム数' in df.columns
+      if isNewSpecifications:
         for i in range(df.index.start, df.index.stop):
-          sum += df['アイテム数'][i]
+          sum = sum + item[i]
+          value_of_one_image_is_equal          = drop[i] == item[i]
+          value_of_one_image_is_equal_manwaka  = drop[i] == item[i] - 1
+          values_of_sum_are_equal              = drop[i] == sum
+          values_of_sum_are_equal_manwaka      = drop[i] == sum - 1
 
-          # 末尾の要素であればその周で最後の画像からのデータ
-          if i == df_end_index:
-
-            # missing の場合をチェックする
-            # missing でなければ、アイテム数の総和とドロ数[+1]が等しくなる
-            if (sum == df['ドロ数'][i]) | (sum == df['ドロ数'][i] + 1):
-              end_indexes.append(i)
+          # 最初の行から最後の1つ手前の行まで
+          if i != df_end:
+            if (drop[i] <= 13):
+              if value_of_one_image_is_equal or value_of_one_image_is_equal_manwaka:
+                end_indexes.append(i)
+              else:
+                logging.warning(
+                  'Even though the number of dorosu is 13 or less,'
+                  + 'it does not match the number of items!'
+                  + f'i={i}, drop={drop[i]}, item={item[i]}, sum={sum}')
               sum = 0
             else:
-              print(f"WARNING: 末尾の行でmissingの可能性があります Line:{i+1}")
+              next_sum = sum + item[i + 1]
+              not_manwaka = drop[i] != next_sum - 1
+              if ((values_of_sum_are_equal and not_manwaka)
+                  or values_of_sum_are_equal_manwaka):
+                end_indexes.append(i)
+                sum = 0
 
+          # 最後の行
           else:
-
-            # アイテム数の総和がドロ数と等しければその周の最後の画像から得たデータ
-            # ただし、その次の行の総和がドロ数+1と等しい場合は特殊ケース(まんわかイベ等)
-            # のためスキップする
-            if (sum == df['ドロ数'][i]) & (sum + df['アイテム数'][i+1] != df['ドロ数'][i+1] + 1):
+            if (value_of_one_image_is_equal
+                or value_of_one_image_is_equal_manwaka):
               end_indexes.append(i)
-              sum = 0
-
-            # 特殊ケース(まんわかイベ等)
-            # アイテム数の総和がドロ数+1になる
-            if sum == df['ドロ数'][i]+1:
+            elif (values_of_sum_are_equal
+                  or values_of_sum_are_equal_manwaka):
               end_indexes.append(i)
-              sum = 0
+            else:
+              logging.warning(
+                'Last data of the last row does not match the number of items!'
+                + f'drop={drop[i]}, item={item[i]}, sum={sum}'
+              )
+          
+          logging.debug(
+            f'i={i}, value_of_one_image_is_equal={value_of_one_image_is_equal}, '
+            + f'value_of_one_image_is_equal_manwaka={value_of_one_image_is_equal_manwaka}, '
+            + f'values_of_sum_are_equal={values_of_sum_are_equal}, '
+            + f'values_of_sum_are_equal_manwaka={values_of_sum_are_equal_manwaka}, '
+            + f'drop={drop[i]}, item={item[i]}, sum={sum}'
+          )
+
       else:
         try:
-          end_indexes = df[~df['ドロ数'].astype(str).str.contains('\+', na=False)].index
+          end_indexes = d[~d['ドロ数'].astype(str).str.contains('\+', na=False)].index
         except AttributeError as e:
           print(e)
 
       return end_indexes
 
-    def get_start_indexes(df):
+    def get_start_indexes(end_indexes):
       """各周回の最初の画像から得たデータ行のindex値を取得する"""
 
       # startの位置は、最初は 0 で2ヵ所目からは end_indexes + 1 から求められる
-      start_indexes = [0] + list(map(lambda x: x+1, get_end_indexes(df)))
+      start_indexes = [0] + list(map(lambda x: x + 1, end_indexes))
 
       # ラストは存在しないので取り除く
       start_indexes.pop()
@@ -257,9 +280,9 @@ class Data:
       def recursive(f, i):
         if i == start_index:
           return row(df, start_index)
-        return recursive(f, i-1) + row(df, i)
+        return recursive(f, i - 1) + row(df, i)
 
-      return recursive(row(df, start_index), end_index)
+      return recursive(row(df, start_index) , end_index)
 
     # アイテム数を削除する
     def remove_item_number(df):
@@ -280,8 +303,8 @@ class Data:
       return df
 
     # 変数
-    sIs = get_start_indexes(df)  # 開始位置
-    eIs = get_end_indexes(df)    # 終了位置
+    eIs = get_end_indexes(df)     # 終了位置
+    sIs = get_start_indexes(eIs)  # 開始位置
     runs = len(sIs)        # 周回数
 
     # 各周回の最初の画像から得たデータ行にその周のデータの総和を書込む
@@ -290,14 +313,13 @@ class Data:
       # 1周分のデータを計算して、報酬QP以前のカラムと結合
       df.iloc[ sI : sI + 1 ] = df.iloc[ sI : sI + 1, : self.QP_col_loc ].join(pd.DataFrame(
         sum_rows(df, sI, eI),
-        columns = df.iloc[ : , self.QP_col_loc : ].columns,
-        index = [sI]
+        columns=df.iloc[:, self.QP_col_loc:].columns,
+        index=[sI]
       ))
 
       #ドロ数を更新する
-      # ex. 20++ → 54,  (manwaka) 46 → 47
+      # 20++ → 54,  (manwaka) 46 → 47
       df.iloc[sI : sI + 1, self.dro_col_loc: self.dro_col_loc + 1] = df.iloc[sI: sI + 1, self.QP_col_loc : ].sum(axis=1)
-
 
     # 既に足した行を削除する
     for sI, eI in [(sIs[i], eIs[i]) for i in range(runs)]:
@@ -333,7 +355,7 @@ class Data:
 
       # i番目のQPカラムにおける QPドロップ値 の series を取得
       def get_drop_qp_values(i):
-        qp_value = int(re.search(r'\d+', change_value( qp_col_names[i]) ).group())
+        qp_value = int(re.search(r'\d+', change_value(qp_col_names[i])).group())
         qp_drops = qp_cols[qp_col_names[i]]
         return qp_value * qp_drops
 
