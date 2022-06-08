@@ -1,7 +1,6 @@
 import io
 import re
 from pathlib import Path
-import requests
 import traceback
 
 import pandas as pd
@@ -114,7 +113,7 @@ class Data:
       else:
         # 日時を取り除く (バッチファイル利用時に発生する日時)
         match = re.search('(?<=_\d\d_\d\d_\d\d_\d\d_\d\d).*', Path(csv_path).stem) 
-        if match != None:
+        if match is not None:
 
           # クエスト場所名の文字列が空文字列になる場合は'[blank]'に置換
           if match.group(0) == '':   
@@ -196,7 +195,7 @@ class Data:
 
     def get_end_indexes(df):
       """各周回の最後の画像から得たデータ行のindex値を取得する"""
-      df_end = df.index.stop - 1
+      df_end_index = df.index.stop - 1
       sum = 0
       end_indexes = []
       if self.isNewSpec:
@@ -204,7 +203,7 @@ class Data:
           sum += df['アイテム数'][i]
 
           # 末尾の要素であればその周で最後の画像からのデータ
-          if i == df_end:
+          if i == df_end_index:
 
             # missing の場合をチェックする
             # missing でなければ、アイテム数の総和とドロ数[+1]が等しくなる
@@ -235,7 +234,7 @@ class Data:
           print(e)
 
       return end_indexes
-      
+
     def get_start_indexes(df):
       """各周回の最初の画像から得たデータ行のindex値を取得する"""
 
@@ -252,7 +251,7 @@ class Data:
 
       # row行目の各アイテムドロ数
       def row(df, row):
-        return df.iloc[row: row+1, self.QP_col_loc: ].values
+        return df.iloc[row: row + 1, self.QP_col_loc:].values
 
       # start_index から end_index までの summation
       def recursive(f, i):
@@ -260,7 +259,7 @@ class Data:
           return row(df, start_index)
         return recursive(f, i-1) + row(df, i)
 
-      return recursive( row(df, start_index) , end_index )
+      return recursive(row(df, start_index), end_index)
 
     # アイテム数を削除する
     def remove_item_number(df):
