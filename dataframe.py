@@ -377,7 +377,7 @@ class Data:
   #   qp_sum False: 削除する
   @process_only_new_specification_data
   def remove_qp_sum_columns(self, df, qp_sum=False):
-    if (qp_sum == False) & ('獲得QP合計' in df.columns):
+    if (qp_sum is False) & ('獲得QP合計' in df.columns):
       try:
         df = df.drop(columns='獲得QP合計')
       except KeyError as e:
