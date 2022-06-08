@@ -2,6 +2,7 @@ import io
 import re
 from pathlib import Path
 import traceback
+import logging
 
 import pandas as pd
 import numpy as np
