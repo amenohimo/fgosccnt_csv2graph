@@ -283,7 +283,7 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
 
     for i, col in enumerate(df.columns):
         y = df[col]
-        ymean = y[len(y) - 1]     
+        ymean = y[len(y) - 1]
         is_exp = re.search('種火|灯火|猛火|業火', col) is not None
 
         # %表記にしないアイテム
@@ -345,13 +345,14 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
                 line_width = 0
 
             # ドロ数は線がないと意味不明瞭になるので、線を残す
-            else: 
+            else:
                 marker_size = 2
                 line_width = 1
 
         fig.add_trace(
             go.Scatter(
-                x=df.index + 1, y=y,
+                x=df.index + 1,
+                y=y,
                 mode=mode,
                 name=col,
                 fill=fill,
@@ -379,7 +380,8 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
             ticksuffix=tix,
             type="linear",  # log
             # rangemode="tozero",
-            row=int(i / 2) + 1, col=i % 2 + 1
+            row=int(i / 2) + 1,
+            col=i % 2 + 1
         )
 
         """
@@ -442,7 +444,8 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
             # 表示をOFFにして、位置を指定してテキストを直打することで代用はおそらく可能
             # title_xanchor='right',　
 
-            row=int(i / 2) + 1, col=i % 2 + 1
+            row=int(i / 2) + 1,
+            col=i % 2 + 1
         )
 
     fig.update_layout(
@@ -1043,7 +1046,7 @@ def plt_parallel_coordinates(df):
     # label_len = int(np.floor((width - margin_left - margin_right) / (len(df.columns) - 1) / 10)) - 1  # 軸の間隔より
 
     # プロポーショナルフォントの場合もあるので、念のため +4
-    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns]) / 2 + 4  
+    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns]) / 2 + 4
     label_width = int(np.floor((width - margin_left - margin_right) / (len(df.columns))))
     for i in range(len(df.columns)):
         rmax = df[df.columns[i]].max()
@@ -1094,7 +1097,7 @@ def plot_graphs(df):
         plt_parallel_coordinates(df)
     if args.event:
         if _is_evernt(df):
-            plt_event_line(df) 
+            plt_event_line(df)
             plt_sunburst(df)
             # plt_line_matplot(df)
     if args.box or args.violin:
