@@ -135,39 +135,191 @@ class Data:
     # 複数行に分かれたデータを1行に統合する
     def merge_data_lines(self, df):
 
-        def get_end_indexes(df):
-            """各周回の最後の画像から得たデータ行のindex値を取得する"""
-            drop: pd.core.series.Series = df['ドロ数']
-            item: pd.core.series.Series = df['アイテム数']
-            df_end = df.index.stop - 1
-            sum = 0
-            end_indexes = []
+        def get_rap_indexes(df):
+            """
+            各周の最初と最後のデータ行を取得する
+
+            - 周の最初のデータ行は、周の最後のデータ行+1で得られる
+
+            - 各周回の最後の画像から得たデータ行のindex値は以下の処理で得られる
+            全てのデータフレームの行の要素に対して以下の処理を繰り返す
+
+            1. 最初の行から最後の1つ手前の行まで
+                1-1. その周(行)のドロ数dropが
+                            drop <= 13
+                を満たす場合は、以下の処理を行う
+
+                    1-1-1. その周(行)のドロ数dropとその行(画像)のアイテム数itemに対し
+                    て次のいずれかを満たす場合、
+                            1-1-1. drop = item     
+                            1-1-2. drop = item - 1
+                    結果のindex値にその行のindexを追加し、アイテム数の総和をリセット
+                    する
+
+                    1-1-2. 1-1-1を満たさない場合 (例えばドロ数10に対してアイテム
+                    数8など) はデータに異常がある
+
+                1-1-2. 1-1を満たさず、
+                    その周(行)のドロ数dとその週のn枚の画像(n行)のアイテム数の総和
+                    Sn = Σ_j=i-n^i(item_j)が次のいずれかを満たす場合、
+                        1-2-1. drop = Sn
+                        1-2-1. drop = Sn - 1
+                    結果のindex値にその行のindexを追加し、アイテム数の総和をリセット
+                    する
+
+            2. 最後の行
+                2-1. その周(行)のドロ数dropとその行(画像)のアイテム数itemに対し
+                て次のいずれかを満たす場合、
+                        2-1-1. drop = item     
+                        2-1-2. drop = item - 1
+                結果のindex値にその行のindexを追加する
+
+                2-2. その周(行)のドロ数dとその週のn枚の画像(n行)のアイテム数の総
+                和 Sn = Σ_j=i-n^i(item_j) が次のいずれかを満たす場合、
+                        2-2-1. drop = Sn
+                        2-2-1. drop = Sn - 1
+                結果のindex値にその行のindexを追加する
+
+            - missing への対処
+            ドロ数が変化した時に Sn が0になっていなければmissing等が発生している
+                前回の周の不完全なデータを削除する
+                不完全な周の最初と最後のデータ行indexを削除する
+                indexの値を修正する
+                Snをリセットする
+            invaildはこの後の処理で報酬QP=0の行として削除される
+            """
+            file_col = df.columns.get_loc('filename')
+            if df.iat[0, file_col] == 'missing':
+                raise Exception('There is missing at the beginning of the data')
             isNewSpecifications = 'アイテム数' in df.columns
             if isNewSpecifications:
+                drop: pd.core.series.Series = df['ドロ数']
+                item: pd.core.series.Series = df['アイテム数']
+                is_missing: pd.core.series.Series = df['filename'] == 'missing'
+                missing_line = [idx for idx, b in enumerate(is_missing) if b is True]
+                if missing_line:
+                    raise Exception(
+                        f'Contains "missing" at line {missing_line}. Check the csv data.')
+                df_end = df.index.stop - 1
+                sum = 0
+                start_indexes = []
+                end_indexes = []
+                prv_drop = drop[0]
+                skip = []
                 for i in range(df.index.start, df.index.stop):
+                    if i in skip:
+                        continue
+                    if i == 0 and not is_missing[i]:
+                        start_indexes.append(0)
                     sum = sum + item[i]
-                    logging.debug(f'i={i}/{df_end}, drop={drop[i]}, item={item[i]}, sum={sum}')  # temp
                     value_of_one_image_is_equal = drop[i] == item[i]
                     value_of_one_image_is_equal_manwaka = drop[i] == item[i] - 1
                     values_of_sum_are_equal = drop[i] == sum
                     values_of_sum_are_equal_manwaka = drop[i] == sum - 1
 
+                    logging.debug(
+                        f'i={i}, value_of_one_image_is_equal={value_of_one_image_is_equal}, '
+                        + f'value_of_one_image_is_equal_manwaka={value_of_one_image_is_equal_manwaka}, '
+                        + f'values_of_sum_are_equal={values_of_sum_are_equal}, '
+                        + f'values_of_sum_are_equal_manwaka={values_of_sum_are_equal_manwaka}, '
+                        + f'is_missing={is_missing[i]}, '
+                        + f'drop={drop[i]}, item={item[i]}, sum={sum}, '
+                        + f'start_index={start_indexes}, end_index={end_indexes}'
+                    )
+
+                    # When 'missing' is detected
+                    if((prv_drop != drop[i]) & (sum != item[i])):
+
+                        # When missing occurs at the middle or end position.
+                        if is_missing[i]:
+
+                            # search start_index of missing
+                            m = 1
+                            while drop[i - m] == drop[i - m - 1]:
+                                m += 1
+                            if start_indexes[-1] != i - m:
+                                start_indexes.append(i - m)
+
+                            # search end_index of missing
+                            if drop[i - 1] != drop[i + 1]:
+                                end_indexes.append(i)
+                            else:
+                                n = 1
+                                while drop[i + n] == drop[i + n + 1]:
+                                    n += 1
+                                end_indexes.append(i + n)
+
+                            # Delete bad data
+                            for k in range(start_indexes[-1], end_indexes[-1] + 1):
+                                df = df.drop(k)
+
+                            logging.warning(
+                                'Detected the kind of missing at '
+                                + f'line {start_indexes[-1]}-{end_indexes[-1]}, '
+                                + f'detected_point={i}, '
+                                + 'When missing occurs at the middle or end position. '
+                                + f'prv_drop={prv_drop}, drop={drop[i]}, '
+                                + f'sum={sum}, item={item[i]}, '
+                                + f'start_index={start_indexes}, end_index={end_indexes}')
+                            skip = range(i + 1, end_indexes[-1] + 1)
+                            sum = 0
+
+                            start_indexes.pop()
+                            start_indexes.append(end_indexes[-1] + 1)
+                            end_indexes.pop()
+
+                            logging.debug(
+                                f'start_index={start_indexes}, end_index={end_indexes}')
+
+                        # When missing occurs at the beginning position.
+                        else:
+                            end_indexes.append(i - 1)
+                            logging.debug(
+                                'Detected the kind of missing at '
+                                + f'line {start_indexes[-1]}-{end_indexes[-1]}, '
+                                + f'detected_point={i}, '
+                                + 'When missing occurs at the beginning position.'
+                                + f'prv_drop={prv_drop}, drop={drop[i]}, '
+                                + f'sum={sum}, item={item[i]}, '
+                                + f'start_index={start_indexes}, end_index={end_indexes}')
+
+                            # Delete bad data
+                            for k in range(start_indexes[-1], end_indexes[-1] + 1):
+                                df = df.drop(k)
+
+                            start_indexes.pop()
+                            end_indexes.pop()
+                            start_indexes.append(i)
+                            sum = 0
+                            logging.debug(
+                                'remove these data and continue processing. '
+                                + f' doro={drop[i]}, item={item[i]}, sum={sum}, '
+                                + f'is_missing={is_missing[i]}, '
+                                + f'start_index={start_indexes}, end_index={end_indexes}'
+                            )
+
                     # 最初の行から最後の1つ手前の行まで
                     if i != df_end:
                         if (drop[i] <= 13):
-                            if value_of_one_image_is_equal or value_of_one_image_is_equal_manwaka:
-                                end_indexes.append(i)
+                            if (value_of_one_image_is_equal
+                                    or value_of_one_image_is_equal_manwaka):
+                                if not is_missing[i]:
+                                    start_indexes.append(i + 1)
+                                    end_indexes.append(i)
+
                             else:
                                 logging.warning(
-                                    'Even though the number of dorosu is 13 or less,'
+                                    'Even though the number of dorosu is 13 or less, '
                                     + 'it does not match the number of items!'
-                                    + f'i={i}, drop={drop[i]}, item={item[i]}, sum={sum}')
+                                    + f'i={i}, drop={drop[i]}, item={item[i]}, sum={sum}, '
+                                    + f'ei={end_indexes[-1]}, si={start_indexes[-1]}')
                             sum = 0
                         else:
                             next_sum = sum + item[i + 1]
                             not_manwaka = drop[i] != next_sum - 1
                             if ((values_of_sum_are_equal and not_manwaka)
                                     or values_of_sum_are_equal_manwaka):
+                                start_indexes.append(i + 1)
                                 end_indexes.append(i)
                                 sum = 0
 
@@ -181,36 +333,22 @@ class Data:
                             end_indexes.append(i)
                         else:
                             logging.warning(
-                                'Last data of the last row does not match the number of items!'
-                                + f'drop={drop[i]}, item={item[i]}, sum={sum}'
+                                'Last data of the last row does not match the number of items! '
+                                + f'line={i}, drop={drop[i]}, item={item[i]}, sum={sum}'
+                                + f'ei={end_indexes[-10:]}, si={start_indexes[-10:]}'
                             )
 
-                    logging.debug(
-                        f'i={i}, value_of_one_image_is_equal={value_of_one_image_is_equal}, '
-                        + f'value_of_one_image_is_equal_manwaka={value_of_one_image_is_equal_manwaka}, '
-                        + f'values_of_sum_are_equal={values_of_sum_are_equal}, '
-                        + f'values_of_sum_are_equal_manwaka={values_of_sum_are_equal_manwaka}, '
-                        + f'drop={drop[i]}, item={item[i]}, sum={sum}'
-                    )
+                    prv_drop = drop[i]
 
             else:
                 try:
                     end_indexes = df[~df['ドロ数'].astype(str).str.contains('\+', na=False)].index
                 except AttributeError as e:
                     print(e)
+                start_indexes = [0] + list(map(lambda x: x + 1, end_indexes))
+                start_indexes.pop()
 
-            return end_indexes
-
-        def get_start_indexes(end_indexes):
-            """各周回の最初の画像から得たデータ行のindex値を取得する"""
-
-            # startの位置は、最初は 0 で2ヵ所目からは end_indexes + 1 から求められる
-            start_indexes = [0] + list(map(lambda x: x + 1, end_indexes))
-
-            # ラストは存在しないので取り除く
-            start_indexes.pop()
-
-            return start_indexes
+            return start_indexes, end_indexes
 
         def sum_rows(df, start_index, end_index):
             """指定された行範囲の各アイテムドロ数の総和を取得する"""
@@ -232,7 +370,7 @@ class Data:
             return df.drop(columns='アイテム数')
 
         # missing, duplicate, invaild などの無効な行を削除する
-        def remove_invailed_row(df):
+        def _remove_invailed_row(df):
             try:
 
                 # 報酬QPが 0 になっている行を削る
@@ -245,10 +383,14 @@ class Data:
 
             return df
 
-        # 変数
-        eIs = get_end_indexes(df)      # 終了位置
-        sIs = get_start_indexes(eIs)   # 開始位置
+        sIs, eIs = get_rap_indexes(df)
         runs = len(sIs)                # 周回数
+        if len(sIs) != len(eIs):
+            raise Exception(
+                'The number of indexes at the start position and the number of indexes '
+                + 'at the end position of each lap do not match.')
+            logging.warning(f'sIs={len(sIs)}, eIs={len(eIs)}')
+            logging.warning( f'sIs={sIs}\n' + f'eIs={eIs}')
 
         # 各周回の最初の画像から得たデータ行にその周のデータの総和を書込む
         for sI, eI in [(sIs[i], eIs[i]) for i in range(runs)]:
@@ -274,7 +416,6 @@ class Data:
 
         if self.isNewSpec:
             df = remove_item_number(df)
-        df = remove_invailed_row(df)
 
         return df
 
