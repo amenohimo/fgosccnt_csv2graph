@@ -557,40 +557,39 @@ def plt_table(df):
     # rates = [f'{i/runs:>.2%}' for i in drops]
 
     # 有効桁数を3桁以上にする
-    #    4桁の時は有効桁数5 1234.5678... -> 1234.5%
-    #    n桁の時は有効桁数n+1
-    #    ただし、2桁以下の場合は有効桁数3    1.2345... -> 1.23%
+    #    4桁の時は有効桁数       5       1234.5678... -> 1234.5%
+    #    n桁の時は有効桁数       n + 1
+    #    2桁以下の場合は有効桁数 3        1.2345... -> 1.23%
     rates = []
-    for i in drops:
+    for drop in drops:
 
         # drop rate
-        dr = i / runs * 100
+        drop_rate = drop / runs * 100
 
         # 整数部の桁数
-        n = len(str(int(dr // 1)))
+        n = len(str(int(drop_rate // 1)))
 
         # 1000% 以上の場合に、改行されないよう調整
-        if n >= 4:
+        if 4 <= n:
             DROPS_WIDTH = DROPS_WIDTH - 0.5
             RATES_WIDTH = RATES_WIDTH + 0.5
 
-        elif n >= 3:
-
-            # 有効数字 significant figures (s.f.)
-            sf = n + 1
+        # 3桁以上の場合は有効数字 n+1 桁
+        elif 3 <= n:
+            significant_figures = n + 1
 
         else:
-            sf = 3
+            significant_figures = 3
 
-        drstr = f'{dr:>.{sf}g}'
+        drop_rate_str = f'{drop_rate:>.{significant_figures}g}'
 
         # % を付与
         # 小数点第1位 (the tenths place) が0の場合、.0が省略されるため、.0を加える
-        if is_integer(drstr):
-            rates.append(f'{dr:>.1f} %')
+        if is_integer(drop_rate_str):
+            rates.append(f'{drop_rate:>.1f} %')
 
         else:
-            rates.append(drstr + ' %')
+            rates.append(drop_rate_str + ' %')
 
     fig = go.Figure(
         data=[
@@ -646,13 +645,6 @@ def plt_table(df):
         )
     )
     output_graphs(fig, 'table')
-
-# def exporpt_html(fig, title):
-#     html_dir = Path(args.htmldir)
-#     if not html_dir.parent.is_dir():
-#         html_dir.parent.mkdir(parents=True)
-#     html_path = html_dir / Path(get_quest_name() + '-' + title + ".html")
-#     fig.write_html(fig, html_path)
 
 
 def plt_event_line(df):
@@ -773,7 +765,7 @@ def plt_event_line(df):
         template = "seaborn"
         fig = make_subplots(rows=1, cols=2, subplot_titles=('枠毎の平均ドロップ数', 'アイテム毎の平均ドロップ数'))
 
-        # 左
+        # left plot
         for i in range(len(E_df2.columns)):
             fig.add_trace(
                 go.Scatter(
@@ -796,7 +788,7 @@ def plt_event_line(df):
             row=1, col=1
         )
 
-        # 右
+        # right plot
         for i in range(len(E_df3.columns)):
             fig.add_trace(
                 go.Scatter(
@@ -1042,7 +1034,9 @@ def plt_parallel_coordinates(df):
     width = 970
     # margin_left = margin_right = max([len(col) for col in df.columns])*10/2
     # label_len = int(np.floor((width - margin_left - margin_right) / (len(df.columns) - 1) / 10)) - 1  # 軸の間隔より
-    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns]) / 2 + 4  # プロポーショナルの場合もあるので、念のため +4
+
+    # プロポーショナルフォントの場合もあるので、念のため +4
+    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns]) / 2 + 4  
     label_width = int(np.floor((width - margin_left - margin_right) / (len(df.columns))))
     for i in range(len(df.columns)):
         rmax = df[df.columns[i]].max()

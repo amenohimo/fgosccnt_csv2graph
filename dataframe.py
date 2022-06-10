@@ -16,7 +16,7 @@ class Data:
         self.quest_name = self.load_quest_name(csv_path)
         self.reward_QP_name = self.load_reward_QP()
         self.QP_col_loc = self.get_qp_col_loc(self.df)
-        self.dro_col_loc = self.df.columns.get_loc('ドロ数')
+        self.drop_col_loc = self.df.columns.get_loc('ドロ数')
         self.df = self.remove_total_row(self.df, total_row)
         self.df = self.cast(self.df)
         self.raw_df = self.df
@@ -61,7 +61,7 @@ class Data:
         if not self.isNewSpec:
             for i, row in enumerate(df['ドロ数']):
                 if not ('+' in str(row)):
-                    df.iloc[i, self.dro_col_loc] = np.uint16(row)
+                    df.iloc[i, self.drop_col_loc] = np.uint16(row)
 
         # ドロ数より後の列は numpy.float64 として読み込まれるので numpy.uint16 にキャスト
         for col in df.columns:
@@ -404,7 +404,7 @@ class Data:
 
             # ドロ数を更新する
             # 20++ → 54,    (manwaka) 46 → 47
-            df.iloc[sI:sI + 1, self.dro_col_loc: self.dro_col_loc + 1] = df.iloc[sI: sI + 1, self.QP_col_loc:].sum(axis=1)
+            df.iloc[sI:sI + 1, self.drop_col_loc: self.drop_col_loc + 1] = df.iloc[sI: sI + 1, self.QP_col_loc:].sum(axis=1)
 
         # 既に足した行を削除する
         for sI, eI in [(sIs[i], eIs[i]) for i in range(runs)]:
@@ -452,7 +452,7 @@ class Data:
             if '獲得QP合計' in df.columns:
                 df['獲得QP合計'] = res
             else:
-                df.insert(loc=self.dro_col_loc + 1, column='獲得QP合計', value=res)
+                df.insert(loc=self.drop_col_loc + 1, column='獲得QP合計', value=res)
 
         return df
 
