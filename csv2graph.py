@@ -139,7 +139,7 @@ def get_east_asian_width(text, half=8, full=14):
 def plt_ridgeline(df):
     df = drop_filename(df)
     fig = go.Figure()
-    data = [go.Violin(x=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True) 
+    data = [go.Violin(x=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True)
             for col in df.columns]
     layout = dict(title='')
     fig = go.Figure(data=data, layout=layout)
@@ -151,6 +151,21 @@ def plt_ridgeline(df):
 
 def plt_not_ordered_graphs(df):
     """plot iolin plot or box plot"""
+
+    layout = _get_not_ordered_graphs_layout(df)
+
+    if args.violin:
+        plot_data = _get_violine_data(df)
+        fig = go.Figure(data=plot_data, layout=layout)
+        output_graphs(fig, 'violin_plot')
+
+    if args.box:
+        plot_data = _get_box_data(df)
+        fig = go.Figure(data=plot_data, layout=layout)
+        output_graphs(fig, 'box_plot')
+
+
+def _get_not_ordered_graphs_layout(df):
     FONT_SIZE = 15
     AXIS_FONT_SIZE = 13
     TEXT_Y_OFFSET = 1
@@ -202,15 +217,7 @@ def plt_not_ordered_graphs(df):
         )
     )
 
-    if args.violin:
-        plot_data = _get_violine_data(df)
-        fig = go.Figure(data=plot_data, layout=layout)
-        output_graphs(fig, 'violin_plot')
-
-    if args.box:
-        plot_data = _get_box_data(df)
-        fig = go.Figure(data=plot_data, layout=layout)
-        output_graphs(fig, 'box_plot')
+    return layout
 
 
 def _get_violine_data(df):
