@@ -244,7 +244,7 @@ def _get_box_data(df):
     return data
 
 
-def plt_all(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
+def plot_line(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
 
     MARGIN_TOP = 65
     MARGIN_BOTTOM = 55
@@ -483,8 +483,8 @@ def plt_rate(df):
     # droprate_df['ドロ数'] /= 100
 
     # %表記を指定してプロット
-    plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率', rate=True)
-    plt_all(droprate_df.copy(), title='各周回数における素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
+    plot_line(droprate_df.copy(), title='各周回数における素材ドロップ率', rate=True)
+    plot_line(droprate_df.copy(), title='各周回数における素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
 
 
 def drop_filename(df):
@@ -1102,7 +1102,7 @@ def plot_graphs(df):
     if args.ridgeline:
         plt_ridgeline(df)
     if args.drops:
-        plt_all(df)
+        plot_line(df)
     if args.rates:
         plt_rate(df)
 
