@@ -1,7 +1,6 @@
 import io
 import re
 from pathlib import Path
-import traceback
 import logging
 import requests
 
@@ -80,12 +79,14 @@ class Data:
 
     # 報酬QPのカラム名を取得
     # ex. '報酬QP(+9400)'
-    def load_reward_QP(self):
+    def load_reward_QP(self) -> str:
         try:
             reward_QP_name = self.df.filter(like='報酬QP', axis=1).columns[0]
-            return reward_QP_name
         except IndexError:
-            print('csvの1行目に 報酬QP が含まれていません')
+            logging.error('csvの1行目に 報酬QP が含まれていません')
+            raise IndexError('csvの1行目に 報酬QP が含まれていません')
+        else:
+            return reward_QP_name
 
     # 報酬QP(+xxxx) の列の位置
     # この後の列はアイテムドロップ数
@@ -99,9 +100,10 @@ class Data:
         try:
             quest_name = self.df.values[0][0]
         except IndexError:
-            print("IndexError :1周分のデータのみ、重複、missingの可能性")
-        except UnboundLocalError:
-            print('UnboundLocalError')
+            logging.warning("IndexError :1周分のデータのみ、重複、missingの可能性")
+        except UnboundLocalError as e:
+            logging.error('UnboundLocalError')
+            raise UnboundLocalError(f'UnboundLocalError: {e}')
 
         # csvにクエスト名が記述されていない場合は、csvのファイル名をクエスト名と
         # して取得する
@@ -135,9 +137,10 @@ class Data:
         if not total_row and (df[self.reward_QP_name][0] > 1):
             try:
                 df = df.drop(index=0)
-                df = df.reset_index(drop=True)
             except IndexError:
-                print(traceback.format_exc())
+                raise
+            else:
+                df = df.reset_index(drop=True)
         return df
 
     # 複数行に分かれたデータを1行に統合する
@@ -159,7 +162,7 @@ class Data:
 
                     1-1-1. その周(行)のドロ数dropとその行(画像)のアイテム数itemに対し
                     て次のいずれかを満たす場合、
-                            1-1-1. drop = item     
+                            1-1-1. drop = item
                             1-1-2. drop = item - 1
                     結果のindex値にその行のindexを追加し、アイテム数の総和をリセット
                     する
@@ -168,7 +171,7 @@ class Data:
                     数8など) はデータに異常がある
 
                 1-1-2. 1-1を満たさず、
-                    その周(行)のドロ数dとその週のn枚の画像(n行)のアイテム数の総和
+                    その周(行)のドロ数dとその周のn枚の画像(n行)のアイテム数の総和
                     Sn = Σ_j=i-n^i(item_j)が次のいずれかを満たす場合、
                         1-2-1. drop = Sn
                         1-2-1. drop = Sn - 1
@@ -178,11 +181,11 @@ class Data:
             2. 最後の行
                 2-1. その周(行)のドロ数dropとその行(画像)のアイテム数itemに対し
                 て次のいずれかを満たす場合、
-                        2-1-1. drop = item     
+                        2-1-1. drop = item
                         2-1-2. drop = item - 1
                 結果のindex値にその行のindexを追加する
 
-                2-2. その周(行)のドロ数dとその週のn枚の画像(n行)のアイテム数の総
+                2-2. その周(行)のドロ数dとその周のn枚の画像(n行)のアイテム数の総
                 和 Sn = Σ_j=i-n^i(item_j) が次のいずれかを満たす場合、
                         2-2-1. drop = Sn
                         2-2-1. drop = Sn - 1
@@ -379,17 +382,19 @@ class Data:
 
         # missing, duplicate, invaild などの無効な行を削除する
         def _remove_invailed_row(df):
-            try:
 
-                # 報酬QPが 0 になっている行を削る
+            # 報酬QPが 0 になっている行を削る
+            try:
                 df = df.drop(df[df[self.reward_QP_name] == 0].index)
-                df = df.reset_index(drop=True)
 
             # QP0が存在しない場合はスキップする
             except IndexError:
                 pass
 
-            return df
+            else:
+                df = df.reset_index(drop=True)
+            finally:
+                return df
 
         sIs, eIs = get_rap_indexes(df)
         runs = len(sIs)                # 周回数
@@ -398,7 +403,7 @@ class Data:
                 'The number of indexes at the start position and the number of indexes '
                 + 'at the end position of each lap do not match.')
             logging.warning(f'sIs={len(sIs)}, eIs={len(eIs)}')
-            logging.warning( f'sIs={sIs}\n' + f'eIs={eIs}')
+            logging.warning(f'sIs={sIs}\n' + f'eIs={eIs}')
 
         # 各周回の最初の画像から得たデータ行にその周のデータの総和を書込む
         for sI, eI in [(sIs[i], eIs[i]) for i in range(runs)]:
@@ -472,8 +477,8 @@ class Data:
         if (qp_sum is False) & ('獲得QP合計' in df.columns):
             try:
                 df = df.drop(columns='獲得QP合計')
-            except KeyError as e:
-                print(e)
+            except KeyError:
+                raise
         return df
 
     def get_number_of_run(self, df):

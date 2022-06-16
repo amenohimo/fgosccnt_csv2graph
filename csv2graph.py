@@ -5,7 +5,7 @@ fgosccnt.py から作成した csv ファイルを元に、グラフを作成す
 fgosccnt.py : https://github.com/fgosc/fgosccnt
 
 機能：
-・箱ひげ図  
+・箱ひげ図
 ・ヴァイオリンプロット
 ・周回数毎のアイテムのドロップ数
 ・周回数毎のアイテムのドロップ率
@@ -19,6 +19,7 @@ fgosccnt.py : https://github.com/fgosc/fgosccnt
 ・HTMLに出力
 """
 import argparse
+from asyncio.log import logger
 import warnings
 import re
 from pathlib import Path
@@ -505,8 +506,8 @@ def drop_filename(df):
     """DataFrameからファイル名の列を削除する"""
     try:
         df = df.drop('filename', axis=1)
-    except KeyError:
-        pass
+    except KeyError as e:
+        logger.info(f'filenameのカラムが存在しません。drop_filename(df), {e}')
     return df
 
 
