@@ -27,6 +27,7 @@ import unicodedata
 
 import numpy as np
 import pandas as pd
+import plotly
 import plotly.offline as offline
 import plotly.express as px
 import plotly.graph_objects as go
@@ -74,9 +75,10 @@ def make_df(csv_path, total_row=False, qp_sum=False):
 
 
 def output_graphs(
-    fig,
+    fig: plotly.graph_objs._figure.Figure,
     graph_type: str
-):
+) -> None:
+
     def plot_on_web_browser(fig):
         offline.iplot(
             fig,
