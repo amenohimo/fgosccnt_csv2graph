@@ -327,27 +327,7 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
             ymin = _ymin - yrange * 0.05  # 0%の時線が見えなくなるので 範囲 * 5% 下げる
             ymax = _ymax + yrange * 0.05  # minだけ調整すると上にずれるので 範囲 * +5% 上げる
 
-        # 周回数が多い場合、サイズが大きいとそれぞれの点や線が重なり合って潰れてしまうため、
-        # 線と点の大きさを、周回数によって変化させる
-        if total_runs < 70:
-            marker_size = 6
-            line_width = 2
-        elif total_runs <= 140:
-            marker_size = 2
-            line_width = 1
-
-        # 200周以上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
-        else:
-
-            # ドロ率はfillと点にする
-            if rate:
-                marker_size = 1
-                line_width = 0
-
-            # ドロ数は線がないと意味不明瞭になるので、線を残す
-            else:
-                marker_size = 2
-                line_width = 1
+        marker_size, line_width = _get_line_width_and_marker_size(total_runs, rate)
 
         fig.add_trace(
             go.Scatter(
@@ -384,39 +364,6 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
             col=i % 2 + 1
         )
 
-        """
-            Formatting Ticks in Python
-            https://plotly.com/python/tick-formatting/
-
-            https://plotly.com/python/axes/
-
-            tickmode
-            Parent: layout.coloraxis.colorbar
-            Type: enumerated , one of ( 'auto' | 'linear' | 'array' )
-            Sets the tick mode for this axis. If 'auto', the number of
-            ticks is set via `nticks`. If 'linear', the placement of the
-            ticks is determined by a starting position `tick0` and a tick
-            step `dtick` ('linear' is the default value if `tick0` and `dtick`
-            are provided). If 'array', the placement of the ticks is set via
-            `tickvals` and the tick text is `ticktext`. ('array' is the default
-            value if `tickvals` is provided).
-            https://plotly.com/matlab/reference/#layout-margin
-        """
-        if total_runs < 30:
-            dtick = 5
-        elif total_runs < 101:
-            dtick = 10
-        elif total_runs < 300:
-            dtick = 25
-        elif total_runs < 1000:
-            dtick = 100
-        elif total_runs < 5000:
-            dtick = 500
-        elif total_runs < 10000:
-            dtick = 1000
-        else:
-            dtick = 5000
-
         fig.update_xaxes(
             # range=[0, df.index.max()+1],
             # fixedrange=True, #  固定範囲 trueの場合、ズームは無効
@@ -429,7 +376,7 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
             # tickmode = 'linear' の場合は、tick0 と dick によってメモリを設定する
             # 0開始の0,5,10,...か、1開始の1,6,11,...の選択を迫られる
             tick0=0,
-            dtick=dtick,
+            dtick=_get_dtick(total_runs),
 
             # tickmode='array' の場合は、ticktext でメモリテキストを tickvals でメモリの配置を設定する
             # 周回数が少ない場合は、1,5,10,... でいいが、多い場合が課題になる
@@ -459,6 +406,70 @@ def plot_line(df, title='各周回数における素材ドロップ数', rate=Fa
         margin=dict(l=MARGIN_LEFT, t=MARGIN_TOP, b=MARGIN_BOTTOM, r=MARGIN_RIGHT, pad=0, autoexpand=False)
     )
     output_graphs(fig, title)
+
+
+def _get_line_width_and_marker_size(total_runs, rate):
+
+    # 周回数が多い場合、サイズが大きいとそれぞれの点や線が重なり合って潰れてしまうため、
+    # 線と点の大きさを、周回数によって変化させる
+    if total_runs < 70:
+        marker_size = 6
+        line_width = 2
+    elif total_runs <= 140:
+        marker_size = 2
+        line_width = 1
+
+    # 200周以上はマーカーが完全に潰れるので、線を無しにする (100~200は未確認)
+    else:
+
+        # ドロ率はfillと点にする
+        if rate:
+            marker_size = 1
+            line_width = 0
+
+        # ドロ数は線がないと意味不明瞭になるので、線を残す
+        else:
+            marker_size = 2
+            line_width = 1
+
+    return marker_size, line_width
+
+
+def _get_dtick(total_runs):
+    """
+    Formatting Ticks in Python
+    https://plotly.com/python/tick-formatting/
+
+    https://plotly.com/python/axes/
+
+    tickmode
+    Parent: layout.coloraxis.colorbar
+    Type: enumerated , one of ( 'auto' | 'linear' | 'array' )
+    Sets the tick mode for this axis. If 'auto', the number of
+    ticks is set via `nticks`. If 'linear', the placement of the
+    ticks is determined by a starting position `tick0` and a tick
+    step `dtick` ('linear' is the default value if `tick0` and `dtick`
+    are provided). If 'array', the placement of the ticks is set via
+    `tickvals` and the tick text is `ticktext`. ('array' is the default
+    value if `tickvals` is provided).
+    https://plotly.com/matlab/reference/#layout-margin
+"""
+    if total_runs < 30:
+        dtick = 5
+    elif total_runs < 101:
+        dtick = 10
+    elif total_runs < 300:
+        dtick = 25
+    elif total_runs < 1000:
+        dtick = 100
+    elif total_runs < 5000:
+        dtick = 500
+    elif total_runs < 10000:
+        dtick = 1000
+    else:
+        dtick = 5000
+
+    return dtick
 
 
 def plt_rate(df):
