@@ -108,7 +108,7 @@ def output_graphs(
         exporpt_html(fig, graph_type)
 
 
-def get_east_asian_width(text, half=8, full=14):
+def get_pixel_of_width_of_string(text: str, half: int = 8, full: int = 14) -> int:
     """
     指定された半角と全角の文字幅から、与えられた文字列の幅 (pixel) を計算する
 
@@ -128,13 +128,13 @@ def get_east_asian_width(text, half=8, full=14):
     Wikipedia:
     https://ja.wikipedia.org/wiki/%E6%9D%B1%E3%82%A2%E3%82%B8%E3%82%A2%E3%81%AE%E6%96%87%E5%AD%97%E5%B9%85
     """
-    pel = 0
+    width = 0
     for c in text:
         if unicodedata.east_asian_width(c) in 'FWA':
-            pel += full
+            width += full
         else:
-            pel += half
-    return pel
+            width += half
+    return width
 
 
 def plt_ridgeline(df):
@@ -553,7 +553,7 @@ def plt_table(df):
     CELL_HEIGHT = 26
     LINE_WIDTH = 1
     HIGHT_OFFSET = 1  # 上下の枠線が消える問題のため調整を行う
-    quest_name_width = get_east_asian_width(quest_name)
+    quest_name_width = get_pixel_of_width_of_string(quest_name)
     if 150 < quest_name_width + 8 * 2 + 14:
         place_width = quest_name_width + 8 * 2 + 7
     else:
@@ -1058,7 +1058,7 @@ def plt_parallel_coordinates(df):
     # label_len = int(np.floor((width - margin_left - margin_right) / (len(df.columns) - 1) / 10)) - 1  # 軸の間隔より
 
     # プロポーショナルフォントの場合もあるので、念のため +4
-    margin_left = margin_right = max([get_east_asian_width(col, 5, 10) for col in df.columns]) / 2 + 4
+    margin_left = margin_right = max([get_pixel_of_width_of_string(col, 5, 10) for col in df.columns]) / 2 + 4
     label_width = int(np.floor((width - margin_left - margin_right) / (len(df.columns))))
     for i in range(len(df.columns)):
         rmax = df[df.columns[i]].max()
@@ -1067,7 +1067,7 @@ def plt_parallel_coordinates(df):
         # cmax =
         lab = ''
         for s in df.columns[i]:
-            if label_width < get_east_asian_width(lab + s, 5, 10):
+            if label_width < get_pixel_of_width_of_string(lab + s, 5, 10):
                 break
             lab += s
         label_len = len(lab)
