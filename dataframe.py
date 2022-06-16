@@ -361,18 +361,18 @@ class Data:
 
             return start_indexes, end_indexes
 
-        def sum_rows(df, start_index, end_index):
+        def sum_rows(df, start_index: int, end_index: int) -> np.ndarray:
             """指定された行範囲の各アイテムドロ数の総和を取得する"""
 
             # row行目の各アイテムドロ数
-            def row(df, row):
+            def row(df, row: int) -> np.ndarray:
                 return df.iloc[row: row + 1, self.QP_col_loc:].values
 
             # start_index から end_index までの summation
-            def recursive(f, i):
+            def recursive(array: np.ndarray, i: np.int64) -> np.ndarray:
                 if i == start_index:
                     return row(df, start_index)
-                return recursive(f, i - 1) + row(df, i)
+                return recursive(array, i - 1) + row(df, i)
 
             return recursive(row(df, start_index), end_index)
 
@@ -432,17 +432,21 @@ class Data:
 
         return df
 
-    # TODO: ボーナスの影響を排除した獲得QP合計を計算して、獲得QP合計カラムに上書きする
-    def calc_qp_sum_columns(self, df, qp_sum=False):
+    # ボーナスの影響を排除した獲得QP合計を計算して、獲得QP合計カラムに上書きする
+    def calc_qp_sum_columns(
+        self,
+        df: pd.core.frame.DataFrame,
+        qp_sum: bool = False
+    ) -> pd.core.frame.DataFrame:
 
         if qp_sum is True:
-            rew_qp = int(re.search(r'\d+', self.reward_QP_name).group())   # 報酬QPの値
-            qp_cols = df.filter(regex='^QP')
-            qp_col_names = qp_cols.columns
-            n = len(qp_col_names)              # ドロップQPのカラム数
+            rew_qp_value: int = int(re.search(r'\d+', self.reward_QP_name).group())   # 報酬QPの値
+            qp_cols: pd.core.frame.DataFrame = df.filter(regex='^QP')
+            qp_col_names: pd.core.indexes.base.Index = qp_cols.columns
+            num_of_drop_qp_columns = len(qp_col_names)
 
             # 万, k などを数値に変換
-            def change_value(line):
+            def change_value(line: str) -> str:
                 line = re.sub("百万", '000000', str(line))
                 line = re.sub("万", '0000', str(line))
                 line = re.sub("千", '000', str(line))
@@ -451,21 +455,21 @@ class Data:
                 return line
 
             # i番目のQPカラムにおける QPドロップ値 の series を取得
-            def get_drop_qp_values(i):
-                qp_value = int(re.search(r'\d+', change_value(qp_col_names[i])).group())
-                qp_drops = qp_cols[qp_col_names[i]]
+            def get_drop_qp_values(i) -> pd.core.series.Series:
+                qp_value: int = int(re.search(r'\d+', change_value(qp_col_names[i])).group())
+                qp_drops: pd.core.series.Series = qp_cols[qp_col_names[i]]
                 return qp_value * qp_drops
 
             # 獲得QP合計を計算する
-            res = rew_qp
-            for i in range(n):
-                res += get_drop_qp_values(i)
+            qp_sum: pd.core.series.Series = rew_qp_value
+            for i in range(num_of_drop_qp_columns):
+                qp_sum += get_drop_qp_values(i)
 
             # 獲得QP合計を書込む
             if '獲得QP合計' in df.columns:
-                df['獲得QP合計'] = res
+                df['獲得QP合計'] = qp_sum
             else:
-                df.insert(loc=self.drop_col_loc + 1, column='獲得QP合計', value=res)
+                df.insert(loc=self.drop_col_loc + 1, column='獲得QP合計', value=qp_sum)
 
         return df
 
@@ -481,6 +485,6 @@ class Data:
                 raise
         return df
 
-    def get_number_of_run(self, df):
+    def get_number_of_run(self, df) -> int:
         num_of_run = df[self.reward_QP_name].sum()
         return num_of_run
