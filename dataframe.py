@@ -25,17 +25,15 @@ class Data:
         self.df = self.remove_qp_sum_columns(self.df, qp_sum=qp_sum)
         self.run = self.get_number_of_run(self.df)
 
-    def read_csv(self, csv_path):
+    def read_csv(self, csv_path: str) -> pd.core.frame.DataFrame:
         try:
-            df = pd.read_csv(csv_path, encoding='shift-jis')
+            return pd.read_csv(csv_path, encoding='shift-jis')
         except UnicodeDecodeError:
-            df = pd.read_csv(csv_path, encoding='UTF-8')
+            return pd.read_csv(csv_path, encoding='UTF-8')
         except pd.errors.EmptyDataError:
-
-            # 空のファイルを指定した可能性がある
-            print(f'\rファイルが空の可能性があります:\n{csv_path}')
-            return None
-        return df
+            logging.error(f'The contents of csv are empty. csv_path = {csv_path}')
+            raise pd.errors.EmptyDataError(
+                f'The contents of csv are empty. csv_path = {csv_path}')
 
     # アイテム数を含む仕様か確認
     #    True : ドロ数 63, 42, 21
