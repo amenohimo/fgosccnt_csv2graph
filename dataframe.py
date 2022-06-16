@@ -311,7 +311,7 @@ class Data:
 
                     # 最初の行から最後の1つ手前の行まで
                     if i != df_end:
-                        if (drop[i] <= 13):
+                        if drop[i] <= 13:
                             if (value_of_one_image_is_equal
                                     or value_of_one_image_is_equal_manwaka):
                                 if not is_missing[i]:
@@ -478,7 +478,7 @@ class Data:
     #     qp_sum False: 削除する
     @process_only_new_specification_data
     def remove_qp_sum_columns(self, df, qp_sum=False):
-        if (qp_sum is False) & ('獲得QP合計' in df.columns):
+        if qp_sum is False & '獲得QP合計' in df.columns:
             try:
                 df = df.drop(columns='獲得QP合計')
             except KeyError:
