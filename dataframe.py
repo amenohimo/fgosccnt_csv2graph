@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 import traceback
 import logging
+import requests
 
 import pandas as pd
 import numpy as np
@@ -26,6 +27,15 @@ class Data:
         self.run = self.get_number_of_run(self.df)
 
     def read_csv(self, csv_path: str) -> pd.core.frame.DataFrame:
+
+        def get_csv_path_on_google_drive(shared_scv_url: str) -> io.BytesIO:
+            id = shared_scv_url.split('/')[5]
+            url = 'https://drive.google.com/uc?id=' + id
+            return io.BytesIO(requests.get(url).content)
+
+        if 'drive.google' in csv_path:
+            csv_path = get_csv_path_on_google_drive(csv_path)
+
         try:
             return pd.read_csv(csv_path, encoding='shift-jis')
         except UnicodeDecodeError:
@@ -58,7 +68,7 @@ class Data:
         # str型になっている数値を数値型に変換
         if not self.isNewSpec:
             for i, row in enumerate(df['ドロ数']):
-                if not ('+' in str(row)):
+                if not '+' in str(row):
                     df.iloc[i, self.drop_col_loc] = np.uint16(row)
 
         # ドロ数より後の列は numpy.float64 として読み込まれるので numpy.uint16 にキャスト
