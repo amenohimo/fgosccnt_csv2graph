@@ -48,7 +48,7 @@ class Data:
     # アイテム数を含む仕様か確認
     #    True : ドロ数 63, 42, 21
     #    False: ドロ数 20++, 21+, 20+
-    def isNewSpecifications(self, df):
+    def isNewSpecifications(self, df) -> bool:
         return 'アイテム数' in df.columns
 
     # 新仕様のデータのみ処理する
@@ -68,7 +68,7 @@ class Data:
         # str型になっている数値を数値型に変換
         if not self.isNewSpec:
             for i, row in enumerate(df['ドロ数']):
-                if not '+' in str(row):
+                if '+' not in str(row):
                     df.iloc[i, self.drop_col_loc] = np.uint16(row)
 
         # ドロ数より後の列は numpy.float64 として読み込まれるので numpy.uint16 にキャスト
