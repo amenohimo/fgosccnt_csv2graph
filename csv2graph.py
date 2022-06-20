@@ -55,7 +55,7 @@ quest_name = ''
 report_data = None
 
 
-def make_df(csv_path, total_row=False, qp_sum=False):
+def make_df(csv_path: str, total_row=False, qp_sum=False) -> pd.core.frame.DataFrame:
     """
     fgosccntで作成したcsvからDataFrameを作成する
 
@@ -140,9 +140,9 @@ def get_pixel_of_width_of_string(text: str, half: int = 8, full: int = 14) -> in
     return width
 
 
-def plt_ridgeline(df) -> NoReturn:
-    df = drop_filename(df)
-    fig = go.Figure()
+def plt_ridgeline(df: pd.core.frame.DataFrame) -> NoReturn:
+    df: pd.core.frame.DataFrame = drop_filename(df)
+    fig: plotly.graph_objs._figure.Figure = go.Figure()
     data = [go.Violin(x=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True)
             for col in df.columns]
     layout = dict(title='')
@@ -153,7 +153,7 @@ def plt_ridgeline(df) -> NoReturn:
     output_graphs(fig, '稜線図')
 
 
-def plt_not_ordered_graphs(df) -> NoReturn:
+def plt_not_ordered_graphs(df: pd.core.frame.DataFrame) -> NoReturn:
     """plot iolin plot or box plot"""
 
     layout = _get_not_ordered_graphs_layout(df)
@@ -169,7 +169,7 @@ def plt_not_ordered_graphs(df) -> NoReturn:
         output_graphs(fig, 'box_plot')
 
 
-def _get_not_ordered_graphs_layout(df):
+def _get_not_ordered_graphs_layout(df: pd.core.frame.DataFrame) -> dict:
     FONT_SIZE = 15
     AXIS_FONT_SIZE = 13
     TEXT_Y_OFFSET = 1
@@ -220,11 +220,10 @@ def _get_not_ordered_graphs_layout(df):
             dtick=dtick
         )
     )
-
     return layout
 
 
-def _get_violine_data(df):
+def _get_violine_data(df: pd.core.frame.DataFrame):
     df = drop_filename(df)
     data = [
         go.Violin(
@@ -237,7 +236,7 @@ def _get_violine_data(df):
     return data
 
 
-def _get_box_data(df):
+def _get_box_data(df: pd.core.frame.DataFrame):
     df = drop_filename(df)
     data = [
         go.Box(
@@ -248,7 +247,12 @@ def _get_box_data(df):
     return data
 
 
-def plot_line(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False) -> NoReturn:
+def plot_line(
+    df: pd.core.frame.DataFrame,
+    title: str = '各周回数における素材ドロップ数',
+    rate: bool = False,
+    range_expans: bool = False
+) -> NoReturn:
 
     MARGIN_TOP = 65
     MARGIN_BOTTOM = 55
@@ -476,7 +480,7 @@ def _get_dtick(total_runs):
     return dtick
 
 
-def plt_rate(df):
+def plt_rate(df: pd.core.frame.DataFrame):
     """
     ドロップ率の収束過程を表示する
     """
@@ -505,7 +509,7 @@ def plt_rate(df):
     plot_line(droprate_df.copy(), title='各周回数における素材ドロップ率 (平均値近傍の拡大)', rate=True, range_expans=True)
 
 
-def drop_filename(df):
+def drop_filename(df: pd.core.frame.DataFrame):
     """DataFrameからファイル名の列を削除する"""
     try:
         df = df.drop('filename', axis=1)
@@ -514,7 +518,7 @@ def drop_filename(df):
     return df
 
 
-def plt_table(df) -> NoReturn:
+def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
     """
         ドロップ数とドロップ率のテーブルを表示する
         ブラウザ上で枠線が表示されない場合は、ブラウザの拡大率を100％に戻すことで表示される
@@ -616,7 +620,7 @@ def plt_table(df) -> NoReturn:
         else:
             rates.append(drop_rate_str + ' %')
 
-    fig = go.Figure(
+    fig: plotly.graph_objs._figure.Figure = go.Figure(
         data=[
             go.Table(
                 columnorder=[0, 1, 2],
@@ -672,7 +676,7 @@ def plt_table(df) -> NoReturn:
     output_graphs(fig, 'table')
 
 
-def plt_event_line(df):
+def plt_event_line(df: pd.core.frame.DataFrame):
     """
         ボーナス毎のイベントアイテムのドロップ数を線形グラフを表示する
     """
@@ -788,7 +792,8 @@ def plt_event_line(df):
         # イベントアイテムの平均ドロップ数
         from plotly.subplots import make_subplots
         template = "seaborn"
-        fig = make_subplots(rows=1, cols=2, subplot_titles=('枠毎の平均ドロップ数', 'アイテム毎の平均ドロップ数'))
+        fig: plotly.graph_objs._figure.Figure = make_subplots(
+            rows=1, cols=2, subplot_titles=('枠毎の平均ドロップ数', 'アイテム毎の平均ドロップ数'))
 
         # left plot
         for i in range(len(E_df2.columns)):
@@ -862,7 +867,7 @@ def plt_event_line(df):
         # fig = px.scatter(E_df3, x=E_df3.index, y=E_df3.columns,
         #                  #color=E_df2.columns,
         #                  labels=dict(index="ボーナス+", value="ドロップ数", variable=""),
-        fig = go.Figure()
+        fig: plotly.graph_objs._figure.Figure = go.Figure()
         for i in range(len(E_df3.columns)):
             fig.add_trace(
                 go.Scatter(
@@ -901,7 +906,7 @@ def plt_event_line(df):
         output_graphs(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
 
-def plt_line_matplot(df) -> NoReturn:
+def plt_line_matplot(df: pd.core.frame.DataFrame) -> NoReturn:
     """
         概念礼装ボーナス毎のイベントアイテム獲得量をラインプロットで描く
 
@@ -982,7 +987,7 @@ def plt_line_matplot(df) -> NoReturn:
     plt.show()
 
 
-def plt_sunburst(df) -> NoReturn:
+def plt_sunburst(df: pd.core.frame.DataFrame) -> NoReturn:
     """
         イベントアイテムの円グラフを描く
         一目でドロップ割合の傾向を掴むことが目的
@@ -991,7 +996,7 @@ def plt_sunburst(df) -> NoReturn:
 
         TODO ドロップ数を表示するか、枠数の比率を表示するか要検討
     """
-    fig = px.sunburst(
+    fig: plotly.graph_objs._figure.Figure = px.sunburst(
         pd.DataFrame({
             'アイテム名': [re.search('.+(?=\(x\d)', i).group(0) for i in df.columns[df.columns.str.contains('\(x')]],
             '枠名': df.columns[df.columns.str.contains('\(x')],
@@ -1008,7 +1013,7 @@ def plt_sunburst(df) -> NoReturn:
     output_graphs(fig, 'イベントアイテムの割合')
 
 
-def plt_simple_parallel_coordinates(df) -> NoReturn:
+def plt_simple_parallel_coordinates(df: pd.core.frame.DataFrame) -> NoReturn:
     """
         平行座標を描く
 
@@ -1019,7 +1024,7 @@ def plt_simple_parallel_coordinates(df) -> NoReturn:
               - データ軸の最大最小値の設定
               - 拘束範囲の設定
     """
-    fig = px.parallel_coordinates(
+    fig: plotly.graph_objs._figure.Figure = px.parallel_coordinates(
         df.drop('filename', axis=1),
         color=df.columns[1],
         dimensions=[dim for dim in df.drop('filename', axis=1).columns],
@@ -1029,7 +1034,7 @@ def plt_simple_parallel_coordinates(df) -> NoReturn:
     output_graphs(fig, 'simple_parallel_coordinates')
 
 
-def plt_parallel_coordinates(df) -> NoReturn:
+def plt_parallel_coordinates(df: pd.core.frame.DataFrame) -> NoReturn:
     """
         平行座標を描く
 
@@ -1100,7 +1105,7 @@ def plt_parallel_coordinates(df) -> NoReturn:
     output_graphs(fig, 'parallel_coordinates')
 
 
-def plot_graphs(df) -> NoReturn:
+def plot_graphs(df: pd.core.frame.DataFrame) -> NoReturn:
 
     def _is_evernt(df):
         """イベントアイテムを含むか"""
