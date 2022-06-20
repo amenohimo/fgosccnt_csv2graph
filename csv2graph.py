@@ -24,6 +24,7 @@ import warnings
 import re
 from pathlib import Path
 import unicodedata
+from typing import NoReturn
 
 import numpy as np
 import pandas as pd
@@ -77,7 +78,7 @@ def make_df(csv_path, total_row=False, qp_sum=False):
 def output_graphs(
     fig: plotly.graph_objs._figure.Figure,
     graph_type: str
-) -> None:
+) -> NoReturn:
 
     def plot_on_web_browser(fig):
         offline.iplot(
@@ -139,7 +140,7 @@ def get_pixel_of_width_of_string(text: str, half: int = 8, full: int = 14) -> in
     return width
 
 
-def plt_ridgeline(df):
+def plt_ridgeline(df) -> NoReturn:
     df = drop_filename(df)
     fig = go.Figure()
     data = [go.Violin(x=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True)
@@ -152,7 +153,7 @@ def plt_ridgeline(df):
     output_graphs(fig, '稜線図')
 
 
-def plt_not_ordered_graphs(df):
+def plt_not_ordered_graphs(df) -> NoReturn:
     """plot iolin plot or box plot"""
 
     layout = _get_not_ordered_graphs_layout(df)
@@ -247,7 +248,7 @@ def _get_box_data(df):
     return data
 
 
-def plot_line(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False):
+def plot_line(df, title='各周回数における素材ドロップ数', rate=False, range_expans=False) -> NoReturn:
 
     MARGIN_TOP = 65
     MARGIN_BOTTOM = 55
@@ -513,7 +514,7 @@ def drop_filename(df):
     return df
 
 
-def plt_table(df):
+def plt_table(df) -> NoReturn:
     """
         ドロップ数とドロップ率のテーブルを表示する
         ブラウザ上で枠線が表示されない場合は、ブラウザの拡大率を100％に戻すことで表示される
@@ -900,7 +901,7 @@ def plt_event_line(df):
         output_graphs(fig, 'ボーナス毎のイベントアイテムのドロップ数')
 
 
-def plt_line_matplot(df):
+def plt_line_matplot(df) -> NoReturn:
     """
         概念礼装ボーナス毎のイベントアイテム獲得量をラインプロットで描く
 
@@ -981,7 +982,7 @@ def plt_line_matplot(df):
     plt.show()
 
 
-def plt_sunburst(df):
+def plt_sunburst(df) -> NoReturn:
     """
         イベントアイテムの円グラフを描く
         一目でドロップ割合の傾向を掴むことが目的
@@ -1007,7 +1008,7 @@ def plt_sunburst(df):
     output_graphs(fig, 'イベントアイテムの割合')
 
 
-def plt_simple_parallel_coordinates(df):
+def plt_simple_parallel_coordinates(df) -> NoReturn:
     """
         平行座標を描く
 
@@ -1028,7 +1029,7 @@ def plt_simple_parallel_coordinates(df):
     output_graphs(fig, 'simple_parallel_coordinates')
 
 
-def plt_parallel_coordinates(df):
+def plt_parallel_coordinates(df) -> NoReturn:
     """
         平行座標を描く
 
@@ -1099,7 +1100,7 @@ def plt_parallel_coordinates(df):
     output_graphs(fig, 'parallel_coordinates')
 
 
-def plot_graphs(df):
+def plot_graphs(df) -> NoReturn:
 
     def _is_evernt(df):
         """イベントアイテムを含むか"""
