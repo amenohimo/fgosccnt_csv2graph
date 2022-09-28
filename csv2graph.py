@@ -541,7 +541,7 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
 
         デフォルトの列幅の比率は、15:6:9
     """
-    def is_integer(n: Union[int, float]) -> bool:
+    def is_integer(n: str[Union[int, float, str]]) -> bool:
         """
             Receives a number and determines if it is an integer
             Returns True if it is an integer, False if it is not an integer
