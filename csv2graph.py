@@ -561,14 +561,15 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
     CELL_HEIGHT = 26
     LINE_WIDTH = 1
     HIGHT_OFFSET = 1  # 上下の枠線が消える問題のため調整を行う
-    quest_name_width = get_pixel_of_width_of_string(quest_name)
-    if 150 < quest_name_width + 8 * 2 + 14:
-        place_width = quest_name_width + 8 * 2 + 7
-    else:
-        place_width = 150
-    DROPS_WIDTH, RATES_WIDTH = 6, 9
-    items_width = np.ceil(place_width / 150 * (DROPS_WIDTH + RATES_WIDTH))
-    width = place_width + 150 + MARGIN_LEFT + MARGIN_RIGHT
+    WIDTH_OFFSET = 8 * 2 + 14
+    # quest_name_width = get_pixel_of_width_of_string(quest_name)
+    # if 150 < quest_name_width + 8 * 2 + 14:
+    #     place_width = quest_name_width + 8 * 2 + 7
+    # else:
+    #     place_width = 150
+    # DROPS_WIDTH, RATES_WIDTH = 6, 9
+    # items_width = np.ceil(place_width / 150 * (DROPS_WIDTH + RATES_WIDTH))
+    # width = place_width + 150 + MARGIN_LEFT + MARGIN_RIGHT
 
     df = drop_filename(df)
     runs = report_data.run
@@ -591,6 +592,7 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
     #    n桁の時は有効桁数       n + 1
     #    2桁以下の場合は有効桁数 3        1.2345... -> 1.23%
     rates = []
+    max_significant_gigures = 0
     for drop in drops:
 
         # drop rate
@@ -601,8 +603,9 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
 
         # 1000% 以上の場合に、改行されないよう調整
         if 4 <= n:
-            DROPS_WIDTH = DROPS_WIDTH - 0.5
-            RATES_WIDTH = RATES_WIDTH + 0.5
+            # DROPS_WIDTH = DROPS_WIDTH - 0.5
+            # RATES_WIDTH = RATES_WIDTH + 0.5
+            pass
 
         # 3桁以上の場合は有効数字 n+1 桁
         elif 3 <= n:
@@ -621,13 +624,34 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
         else:
             rates.append(drop_rate_str + ' %')
 
+        if max_significant_gigures < significant_figures:
+            max_significant_gigures = significant_figures
+
+    # カラムの幅を計算
+    items_max_width = 0
+    drops_max_width = 0
+    rates_max_width = 0
+    for item_name, drop_num, drop_rate in zip(items, drops, rates):
+        item_name_pixel = get_pixel_of_width_of_string(item_name)
+        drops_max_pixel = get_pixel_of_width_of_string(str(drop_num.item()))  # np.int64 -> int -> str
+        rates_max_pixel = get_pixel_of_width_of_string(drop_rate)
+        if items_max_width < item_name_pixel:
+            items_max_width = item_name_pixel
+        if drops_max_width < drops_max_pixel:
+            drops_max_width = drops_max_pixel
+        if rates_max_width < rates_max_pixel:
+            rates_max_width = rates_max_pixel
+    items_max_width += WIDTH_OFFSET + 10
+    drops_max_width += WIDTH_OFFSET
+    rates_max_width += WIDTH_OFFSET
+    print(f'{items_max_width=} {drops_max_width=} {rates_max_width=}')
     fig: plotly.graph_objs._figure.Figure = go.Figure(
         data=[
             go.Table(
                 columnorder=[0, 1, 2],
-                columnwidth=[items_width, DROPS_WIDTH, RATES_WIDTH],
+                columnwidth=[items_max_width, drops_max_width, rates_max_width],  # [items_width, DROPS_WIDTH, RATES_WIDTH],
                 header=dict(
-                    values=[quest_name, runs, ''],
+                    values=['周回数', runs, ''],  # [quest_name, runs, ''],
                     line_color='black',
                     line_width=LINE_WIDTH,
                     fill_color='white',
@@ -657,11 +681,17 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
         ]
     )
     fig.update_layout(
+        title={
+            'text': quest_name,
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': dict(size=15)
+        },
         # LINE_WIDTH は現時点で1or2以外の場合を考慮していない
         # 線幅を考える時に考える
         # HIGHT_OFFSETを設定しないと下の枠線が消える
         height=CELL_HEIGHT * len(df.columns[1:]) + MARGIN_TOP + MARGIN_BOTTOM + LINE_WIDTH + HIGHT_OFFSET,
-        width=width,
+        width=items_max_width + drops_max_width + rates_max_width + MARGIN_LEFT + MARGIN_RIGHT,
         font=dict(size=14),
         # 背景色を変えてfigの範囲を確認する場合や、単に背景色を変えたい時に変更
         paper_bgcolor='white',   # white', '#FFFFFF', "#aaf", '#EAEAF2', '#DBE3E6'
