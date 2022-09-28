@@ -25,6 +25,7 @@ import re
 from pathlib import Path
 import unicodedata
 from typing import NoReturn
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -540,7 +541,7 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
 
         デフォルトの列幅の比率は、15:6:9
     """
-    def is_integer(n):
+    def is_integer(n: Union[int, float]) -> bool:
         """
             Receives a number and determines if it is an integer
             Returns True if it is an integer, False if it is not an integer
