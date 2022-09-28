@@ -541,17 +541,17 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
 
         デフォルトの列幅の比率は、15:6:9
     """
-    def is_integer(n: str[Union[int, float, str]]) -> bool:
+    def is_integer(num: Union[int, float, str]) -> bool:
         """
             Receives a number and determines if it is an integer
             Returns True if it is an integer, False if it is not an integer
         """
         try:
-            float(n)
+            float(num)
         except ValueError:
             return False
         else:
-            return float(n).is_integer()
+            return float(num).is_integer()
 
     MARGIN_TOP = 30
     MARGIN_BOTTOM = 30
@@ -560,6 +560,7 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
     MARGIN_PAD = 0
     CELL_HEIGHT = 26
     LINE_WIDTH = 1
+    FONT_SIZE = 16
     HIGHT_OFFSET = 1  # 上下の枠線が消える問題のため調整を行う
     WIDTH_OFFSET = 8 * 2 + 14
     # quest_name_width = get_pixel_of_width_of_string(quest_name)
@@ -601,28 +602,33 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
         # 整数部の桁数
         n = len(str(int(drop_rate // 1)))
 
-        # 1000% 以上の場合に、改行されないよう調整
-        if 4 <= n:
-            # DROPS_WIDTH = DROPS_WIDTH - 0.5
-            # RATES_WIDTH = RATES_WIDTH + 0.5
-            pass
+        # 3桁以上の場合
+        # 有効数字 n+1 桁
+        # %を付けない
+        if 3 <= n:
+            significant_figures = n - 1
 
-        # 3桁以上の場合は有効数字 n+1 桁
-        elif 3 <= n:
-            significant_figures = n + 1
+            drop_rate /= 100
+            drop_rate_str = f'{drop_rate:>.{significant_figures}g}    '
+            rates.append(drop_rate_str)
 
         else:
             significant_figures = 3
 
-        drop_rate_str = f'{drop_rate:>.{significant_figures}g}'
+            drop_rate_str = f'{drop_rate:>.{significant_figures}g}'
 
-        # % を付与
-        # 小数点第1位 (the tenths place) が0の場合、.0が省略されるため、.0を加える
-        if is_integer(drop_rate_str):
-            rates.append(f'{drop_rate:>.1f} %')
+            # % を付与
+            # 小数点第1位 (the tenths place) が0の場合、.0が省略されるため、.0を加える
+            if is_integer(drop_rate_str):
+                rates.append(f'{drop_rate:>.1f} %')
 
-        else:
-            rates.append(drop_rate_str + ' %')
+            else:
+
+                # 小数点第2位が0の場合、0を加える  ex. 6.9 -> 6.90
+                if len(drop_rate_str.replace('.', '')) == 2:
+                    drop_rate_str += '0'
+
+                rates.append(drop_rate_str + ' %')
 
         if max_significant_gigures < significant_figures:
             max_significant_gigures = significant_figures
@@ -632,32 +638,33 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
     drops_max_width = 0
     rates_max_width = 0
     for item_name, drop_num, drop_rate in zip(items, drops, rates):
-        item_name_pixel = get_pixel_of_width_of_string(item_name)
-        drops_max_pixel = get_pixel_of_width_of_string(str(drop_num.item()))  # np.int64 -> int -> str
-        rates_max_pixel = get_pixel_of_width_of_string(drop_rate)
+        item_name_pixel = get_pixel_of_width_of_string(item_name, half=np.ceil(FONT_SIZE / 2), full=FONT_SIZE)
+        drops_max_pixel = get_pixel_of_width_of_string(str(drop_num.item()), half=np.ceil(FONT_SIZE),
+                                                       full=FONT_SIZE)  # np.int64 -> int -> str
+        rates_max_pixel = get_pixel_of_width_of_string(drop_rate, half=np.ceil(FONT_SIZE / 2), full=FONT_SIZE)
         if items_max_width < item_name_pixel:
             items_max_width = item_name_pixel
         if drops_max_width < drops_max_pixel:
             drops_max_width = drops_max_pixel
         if rates_max_width < rates_max_pixel:
             rates_max_width = rates_max_pixel
-    items_max_width += WIDTH_OFFSET + 10
-    drops_max_width += WIDTH_OFFSET
-    rates_max_width += WIDTH_OFFSET
-    print(f'{items_max_width=} {drops_max_width=} {rates_max_width=}')
+    items_max_width = max(items_max_width, get_pixel_of_width_of_string('アイテム名')) + WIDTH_OFFSET + 10
+    drops_max_width = max(drops_max_width, get_pixel_of_width_of_string('ドロ数')) + WIDTH_OFFSET - 5
+    rates_max_width += WIDTH_OFFSET + 5
+
     fig: plotly.graph_objs._figure.Figure = go.Figure(
         data=[
             go.Table(
                 columnorder=[0, 1, 2],
                 columnwidth=[items_max_width, drops_max_width, rates_max_width],  # [items_width, DROPS_WIDTH, RATES_WIDTH],
                 header=dict(
-                    values=['周回数', runs, ''],  # [quest_name, runs, ''],
+                    values=['アイテム名', 'ドロ数', 'ドロ率'],  # [quest_name, runs, ''],
                     line_color='black',
                     line_width=LINE_WIDTH,
                     fill_color='white',
-                    align=['left', 'right', 'right'],
+                    align=['center', 'center', 'center'],
                     font_color='black',
-                    font_size=14,
+                    font_size=15,
                     # font=dict(
                     #     color='black',
                     #     size=14
@@ -670,10 +677,10 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
                     line_color='black',
                     line_width=LINE_WIDTH,
                     fill_color='white',
-                    align=['left', 'right'],
+                    align=['center', 'right'],
                     font=dict(
                         color='black',
-                        size=14
+                        size=15
                     ),
                     height=CELL_HEIGHT
                 )
@@ -682,7 +689,7 @@ def plt_table(df: pd.core.frame.DataFrame) -> NoReturn:
     )
     fig.update_layout(
         title={
-            'text': quest_name,
+            'text': quest_name + f'  {runs} 周',
             'x': 0.5,
             'xanchor': 'center',
             'font': dict(size=15)
