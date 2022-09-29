@@ -224,7 +224,7 @@ def _get_not_ordered_graphs_layout(df: pd.core.frame.DataFrame) -> dict:
     return layout
 
 
-def _get_violine_data(df: pd.core.frame.DataFrame):
+def _get_violine_data(df: pd.core.frame.DataFrame) -> list[plotly.graph_objs._violin.Violin]:
     df = drop_filename(df)
     data = [
         go.Violin(
@@ -237,7 +237,7 @@ def _get_violine_data(df: pd.core.frame.DataFrame):
     return data
 
 
-def _get_box_data(df: pd.core.frame.DataFrame):
+def _get_box_data(df: pd.core.frame.DataFrame) -> list[plotly.graph_objs._box.Box]:
     df = drop_filename(df)
     data = [
         go.Box(
