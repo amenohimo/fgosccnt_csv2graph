@@ -37,13 +37,10 @@ from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 import japanize_matplotlib
 import seaborn as sns
-sns.set()
 from kaleido.scopes.plotly import PlotlyScope
-scope = PlotlyScope()
 import cufflinks as cf
-cf.go_offline()
 
-from dataframe import Data
+from .dataframe import Data
 
 progname = "csv2graph"
 version = "0.0.1.20220606.2"
@@ -51,6 +48,13 @@ version = "0.0.1.20220606.2"
 warnings.simplefilter('ignore', FutureWarning)
 
 pd.options.plotting.backend = "plotly"
+sns.set()
+scope = PlotlyScope()
+cf.go_offline()
+
+# 'japanize_matplotlib' imported but unused flake8(F401) 対策
+# import japanize_matplotlib の後に # noqa でもいいけれど、__all__にリストアップしておく
+__all__ = ['japanize_matplotlib']
 
 quest_name = ''
 report_data = None
@@ -146,7 +150,7 @@ def plt_ridgeline(df: pd.core.frame.DataFrame) -> NoReturn:
     fig: plotly.graph_objs._figure.Figure = go.Figure()
     data = [go.Violin(x=df[col], name=col, showlegend=False, box_visible=True, meanline_visible=True)
             for col in df.columns]
-    layout = dict(title='')
+    layout = {'title': ''}  # dict(title='')
     fig = go.Figure(data=data, layout=layout)
     fig.update_traces(orientation='h', side='positive', width=2, points=False)
     fig.update_xaxes(title_text="ドロップ数", dtick=1)
@@ -154,6 +158,7 @@ def plt_ridgeline(df: pd.core.frame.DataFrame) -> NoReturn:
     output_graphs(fig, '稜線図')
 
 
+# Use in box or violin
 def plt_not_ordered_graphs(df: pd.core.frame.DataFrame) -> NoReturn:
     """plot iolin plot or box plot"""
 
@@ -170,6 +175,7 @@ def plt_not_ordered_graphs(df: pd.core.frame.DataFrame) -> NoReturn:
         output_graphs(fig, 'box_plot')
 
 
+# Use in box or violin
 def _get_not_ordered_graphs_layout(df: pd.core.frame.DataFrame) -> dict:
     FONT_SIZE = 15
     AXIS_FONT_SIZE = 13
